@@ -17,7 +17,13 @@ export interface IProfile extends Document {
     upcomingEvents:     string[];
     socialLinks:        Map<string, string>;
     location?:          { type: 'Point'; coordinates: [number, number] };
-    
+    birthDate?:         Date;
+    gender?:            string;
+    genderPreferences?: string[];
+    ageMin?:            number;
+    ageMax?:            number;
+    maxDistance?:       number;
+    profileComplete?:   boolean;
 }
 
 const ProfileSchema = new Schema<IProfile>({
@@ -36,6 +42,13 @@ const ProfileSchema = new Schema<IProfile>({
     favoriteBands:      [String],
     upcomingEvents:     [String],
     socialLinks:        { type: Map, of: String, default: {} },
+    birthDate:          { type: Date },
+    gender:             { type: String },
+    genderPreferences:  [String],
+    ageMin:             { type: Number, default: 18 },
+    ageMax:             { type: Number, default: 99 },
+    maxDistance:        { type: Number, default: 50 },
+    profileComplete:    { type: Boolean, default: false },
     location: {
         type:           { type: String, enum: ['Point']},
         coordinates:    { type: [Number] },

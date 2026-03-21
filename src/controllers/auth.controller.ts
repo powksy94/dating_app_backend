@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 import { User } from "../models/user.model.js";
 import { Profile } from "../models/profile.model.js";
+import { containsBannedWord } from "../data/banned-words.js";
 
 export async function register(req: Request, res: Response): Promise<void> {
     const { email, password, username } = req.body;
@@ -61,4 +62,31 @@ export async function me(req: Request, res: Response): Promise<void> {
     const user = await User.findById((req as any).userId).select('-passwordHash');
     if (!user) { res.status(404).json({ message: 'Utilisateur introuvable' }); return; }
     res.json(user);
+}
+
+export async function checkUsername(req: Request, res: Response): Promise<void> {
+    const { username } = req.query as { username: string };
+
+    if (!username || username.trim().length < 3) {
+        res.status(400).json({ available: false, reason: 'Trop court (3 caractères minimum)' });
+        return;
+    }
+
+    if (username.length > 20) {
+        res.status(400).json({ available: false, reason: 'Trop long (20 caractères maximum)' });
+        return;
+    }
+
+    if (!/^[a-zA-Z0-9_.\-]+$/.test(username)) {
+        res.status(400).json({ available: false, reason: 'Caractères invalides' });
+        return;
+    }
+
+    if (containsBannedWord(username)) {
+        res.status(400).json({ available: false, reason: 'Pseudo non autorisé' });
+        return;
+    }
+
+    const exists = await Profile.findOne({ username: username.trim() });
+    res.json({ available: !exists });
 }
