@@ -4,6 +4,7 @@ export interface IProfile extends Document {
     owner:              mongoose.Types.ObjectId;
     username:           string;
     avatarUrl:          string;
+    photos:             string[];                 
     bio:                string;
     age?:               number;
     pronouns?:          string;
@@ -30,6 +31,7 @@ const ProfileSchema = new Schema<IProfile>({
     owner:              { type: Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
     username:           { type: String, required: true },
     avatarUrl:          { type: String, default: '' },
+    photos:             [{ type: String}],
     bio:                { type: String, default: '' },
     age:                { type: Number },
     pronouns:           { type: String },
