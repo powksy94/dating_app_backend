@@ -24,7 +24,7 @@ export async function register(req: Request, res: Response): Promise<void> {
     // Create an empty profile linked to this user
     await Profile.create({ owner: user._id, username });
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET!, {
+    const token = jwt.sign({ userId: user._id.toString() }, process.env.JWT_SECRET!, {
         expiresIn: (process.env.JWT_EXPIRES_IN ?? '7d') as any,
     });
 
@@ -50,7 +50,7 @@ export async function login(req: Request, res: Response): Promise<void> {
         return;
     }
 
-    const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET!, {
+    const token = jwt.sign({ userId: user._id.toString() }, process.env.JWT_SECRET!, {
         expiresIn: (process.env.JWT_EXPIRES_IN ?? '7d') as any,
     });
 
