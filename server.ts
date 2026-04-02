@@ -11,6 +11,7 @@ import swipeRoutes      from './src/routes/swipe.routes.js';
 import matchRoutes      from './src/routes/match.routes.js';
 import chatRoutes       from './src/routes/chat.routes.js';
 import adminRoutes      from './src/routes/admin.routes.js';
+import devRoutes        from './src/routes/dev.routes.js';
 
 const app = express();
 const PORT = process.env.PORT ?? 3000;
@@ -26,6 +27,7 @@ app.use('/api/swipe', swipeRoutes);
 app.use('/api/matches', matchRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/dev',   devRoutes);
 
 app.get('/health', (_req, res) => res.json({ status: 'ok', app: 'nocturne' }))
 

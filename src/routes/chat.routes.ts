@@ -7,6 +7,6 @@ const router = Router();
 router.use(authMiddleware)
 
 router.get('/:matchId', getMessages);
-router.post('/matchId', sendMessage);
+router.post('/:matchId', sendMessage);
 
 export default router;
