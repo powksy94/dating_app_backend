@@ -19,13 +19,8 @@ const MOCK_USERS = [
         musicEras: ['80s goth'],
         soundIntensity: ['intense'],
         discoveryFormats: ['concerts', 'vinyl collector'],
-        avatarUrl: 'https://i.pravatar.cc/400?img=47',
-        photos: [
-            'https://i.pravatar.cc/600?img=47',
-            'https://picsum.photos/seed/morgana1/600/800',
-            'https://picsum.photos/seed/morgana2/600/800',
-            'https://picsum.photos/seed/morgana3/600/800',
-        ],
+        avatarUrl: '',
+        photos: [],
     },
     {
         email: 'corvus@nocturne.demo',
@@ -39,13 +34,8 @@ const MOCK_USERS = [
         musicEras: ['2000s industrial'],
         soundIntensity: ['chaotic'],
         discoveryFormats: ['bandcamp', 'concerts'],
-        avatarUrl: 'https://i.pravatar.cc/400?img=12',
-        photos: [
-            'https://i.pravatar.cc/600?img=12',
-            'https://picsum.photos/seed/corvus1/600/800',
-            'https://picsum.photos/seed/corvus2/600/800',
-            'https://picsum.photos/seed/corvus3/600/800',
-        ],
+        avatarUrl: '',
+        photos: [],
     },
     {
         email: 'selene@nocturne.demo',
@@ -59,13 +49,8 @@ const MOCK_USERS = [
         musicEras: ['2000s emo', 'tumblr era'],
         soundIntensity: ['soft', 'intense'],
         discoveryFormats: ['playlists', 'concerts'],
-        avatarUrl: 'https://i.pravatar.cc/400?img=32',
-        photos: [
-            'https://i.pravatar.cc/600?img=32',
-            'https://picsum.photos/seed/selene1/600/800',
-            'https://picsum.photos/seed/selene2/600/800',
-            'https://picsum.photos/seed/selene3/600/800',
-        ],
+        avatarUrl: '',
+        photos: [],
     },
 ];
 
@@ -79,9 +64,9 @@ export async function seedMockUsers(_req: Request, res: Response): Promise<void>
         if (!user) {
             user = await User.create({ email: mock.email, passwordHash: DEMO_PASSWORD_HASH });
         }
-        const profileExists = await Profile.findOne({ owner: user._id });
-        if (!profileExists) {
-            await Profile.create({
+        await Profile.findOneAndUpdate(
+            { owner: user._id },
+            {
                 owner:           user._id,
                 username:        mock.username,
                 avatarUrl:       mock.avatarUrl,
@@ -96,9 +81,10 @@ export async function seedMockUsers(_req: Request, res: Response): Promise<void>
                 soundIntensity:  mock.soundIntensity,
                 discoveryFormats: mock.discoveryFormats,
                 profileComplete: true,
-            });
-            created.push(mock.username);
-        }
+            },
+            { upsert: true }
+        );
+        created.push(mock.username);
     }
 
     res.json({ message: 'Mock users prêts', created });
