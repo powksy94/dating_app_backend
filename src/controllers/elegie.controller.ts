@@ -34,6 +34,9 @@ export async function sendElegie(req: AuthRequest, res: Response): Promise<void>
     // Si la cible a déjà liké l'expéditeur → match immédiat
     const alreadyLiked = await Like.findOne({ from: toId, to: fromId });
     if (alreadyLiked) {
+        // Ajouter le like de l'expéditeur pour exclure le profil du feed
+        await Like.updateOne({ from: fromId, to: toId }, {}, { upsert: true });
+
         let matchDoc = await Match.findOne({ users: { $all: [fromId, toId] } });
         if (!matchDoc) {
             matchDoc = await Match.create({ users: [fromId, toId] });
