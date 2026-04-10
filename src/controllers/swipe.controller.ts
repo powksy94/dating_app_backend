@@ -2,6 +2,7 @@ import { Response } from "express";
 import { Like } from "../models/like.model.js";
 import { Match } from "../models/match.model.js";
 import { Profile } from "../models/profile.model.js";
+import { Elegie } from "../models/elegie.model.js";
 import { AuthRequest } from "../middleware/auth.middleware.js";
 import mongoose from "mongoose";
 
@@ -18,21 +19,36 @@ export async function likeUser(req: AuthRequest, res: Response): Promise<void> {
 
     const mutual = await Like.findOne({ from: toId, to: fromId });
     if (mutual) {
-        // check if match already exists
         let matchDoc = await Match.findOne({ users: { $all: [fromId, toId] }});
         if (!matchDoc) {
             matchDoc = await Match.create({ users: [fromId, toId] });
         }
+        // Marquer l'élégie comme matched si elle existe
+        await Elegie.findOneAndUpdate(
+            { from: toId, to: fromId, status: 'pending' },
+            { status: 'matched' }
+        );
         res.json({ match: true, matchId: matchDoc._id });
         return;
     }
 
-    res.json({ match: false});
+    res.json({ match: false });
 }
 
-export async function dislikeUser(_req: AuthRequest, res: Response): Promise<void> {
-    // Dislike as a nevative like 
-    // Profiles already liked will be excluded in fecthSwipeProfiles
+export async function dislikeUser(req: AuthRequest, res: Response): Promise<void> {
+    const userId = new mongoose.Types.ObjectId(req.userId);
+    const toId   = new mongoose.Types.ObjectId(req.params.targetId as string);
+
+    // Si la cible nous a envoyé une élégie, incrémenter dislikeCount
+    const elegie = await Elegie.findOne({ from: toId, to: userId, status: 'pending' });
+    if (elegie) {
+        elegie.dislikeCount += 1;
+        if (elegie.dislikeCount >= 2) {
+            elegie.status = 'rejected';
+        }
+        await elegie.save();
+    }
+
     res.json({ ok: true });
 }
 
