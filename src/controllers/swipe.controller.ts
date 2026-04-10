@@ -3,6 +3,7 @@ import { Like } from "../models/like.model.js";
 import { Match } from "../models/match.model.js";
 import { Profile } from "../models/profile.model.js";
 import { Elegie } from "../models/elegie.model.js";
+import { Message } from "../models/message.model.js";
 import { AuthRequest } from "../middleware/auth.middleware.js";
 import mongoose from "mongoose";
 
@@ -23,11 +24,19 @@ export async function likeUser(req: AuthRequest, res: Response): Promise<void> {
         if (!matchDoc) {
             matchDoc = await Match.create({ users: [fromId, toId] });
         }
-        // Marquer l'élégie comme matched si elle existe
-        await Elegie.findOneAndUpdate(
-            { from: toId, to: fromId, status: 'pending' },
-            { status: 'matched' }
+        // Si l'utilisateur avait envoyé une élégie → la marquer matched + premier message
+        const elegie = await Elegie.findOneAndUpdate(
+            { from: fromId, to: toId, status: 'pending' },
+            { status: 'matched' },
+            { new: true }
         );
+        if (elegie) {
+            await Message.create({
+                matchId: matchDoc._id,
+                sender:  fromId,
+                text:    elegie.text,
+            });
+        }
         res.json({ match: true, matchId: matchDoc._id });
         return;
     }
