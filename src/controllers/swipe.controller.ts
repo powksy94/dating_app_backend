@@ -19,11 +19,11 @@ export async function likeUser(req: AuthRequest, res: Response): Promise<void> {
     const mutual = await Like.findOne({ from: toId, to: fromId });
     if (mutual) {
         // check if match already exists
-        const existingMatch =  await Match.findOne({ users: { $all: [fromId, toId] }});
-        if (!existingMatch) {
-            await Match.create({ users: [fromId, toId] });
+        let matchDoc = await Match.findOne({ users: { $all: [fromId, toId] }});
+        if (!matchDoc) {
+            matchDoc = await Match.create({ users: [fromId, toId] });
         }
-        res.json({ match: true });
+        res.json({ match: true, matchId: matchDoc._id });
         return;
     }
 
