@@ -1,6 +1,9 @@
 import { Response } from 'express';
 import { AuthRequest } from '../middleware/auth.middleware.js';
 import { Elegie } from '../models/elegie.model.js';
+import { Like } from '../models/like.model.js';
+import { Match } from '../models/match.model.js';
+import { Message } from '../models/message.model.js';
 import { Profile } from '../models/profile.model.js';
 import mongoose from 'mongoose';
 
@@ -22,13 +25,30 @@ export async function sendElegie(req: AuthRequest, res: Response): Promise<void>
         return;
     }
 
-    await Elegie.findOneAndUpdate(
+    const elegie = await Elegie.findOneAndUpdate(
         { from: fromId, to: toId },
         { text: text.trim(), status: 'pending', dislikeCount: 0 },
         { upsert: true, new: true }
     );
 
-    res.json({ message: 'Élégie envoyée' });
+    // Si la cible a déjà liké l'expéditeur → match immédiat
+    const alreadyLiked = await Like.findOne({ from: toId, to: fromId });
+    if (alreadyLiked) {
+        let matchDoc = await Match.findOne({ users: { $all: [fromId, toId] } });
+        if (!matchDoc) {
+            matchDoc = await Match.create({ users: [fromId, toId] });
+        }
+        await Elegie.findByIdAndUpdate(elegie!._id, { status: 'matched' });
+        await Message.create({
+            matchId: matchDoc._id,
+            sender:  fromId,
+            text:    text.trim(),
+        });
+        res.json({ message: 'Élégie envoyée', match: true, matchId: matchDoc._id });
+        return;
+    }
+
+    res.json({ message: 'Élégie envoyée', match: false });
 }
 
 export async function getReceived(req: AuthRequest, res: Response): Promise<void> {
