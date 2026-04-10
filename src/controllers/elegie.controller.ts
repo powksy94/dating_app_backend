@@ -6,7 +6,7 @@ import mongoose from 'mongoose';
 
 export async function sendElegie(req: AuthRequest, res: Response): Promise<void> {
     const fromId   = new mongoose.Types.ObjectId(req.userId);
-    const toId     = new mongoose.Types.ObjectId(req.params.targetId);
+    const toId     = new mongoose.Types.ObjectId(String(req.params.targetId));
     const { text } = req.body as { text: string };
 
     if (!text || text.trim().length === 0) {
