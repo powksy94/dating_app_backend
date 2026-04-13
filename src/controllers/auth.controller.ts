@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { User } from "../models/user.model.js";
 import { Profile } from "../models/profile.model.js";
 import { containsBannedWord } from "../data/banned-words.js";
+import type { AuthRequest } from "../middleware/auth.middleware.js";
 
 export async function register(req: Request, res: Response): Promise<void> {
     const { email, password, username } = req.body;
@@ -62,6 +63,36 @@ export async function me(req: Request, res: Response): Promise<void> {
     const user = await User.findById((req as any).userId).select('-passwordHash');
     if (!user) { res.status(404).json({ message: 'Utilisateur introuvable' }); return; }
     res.json(user);
+}
+
+export async function changePassword(req: AuthRequest, res: Response): Promise<void> {
+    const { currentPassword, newPassword } = req.body as { currentPassword: string; newPassword: string };
+
+    if (!currentPassword || !newPassword) {
+        res.status(400).json({ message: 'Mot de passe actuel et nouveau requis' });
+        return;
+    }
+    if (newPassword.length < 12) {
+        res.status(400).json({ message: 'Le nouveau mot de passe doit faire au moins 12 caractères' });
+        return;
+    }
+
+    const user = await User.findById(req.userId);
+    if (!user) {
+        res.status(404).json({ message: 'Utilisateur introuvable' });
+        return;
+    }
+
+    const valid = await bcrypt.compare(currentPassword, user.passwordHash);
+    if (!valid) {
+        res.status(401).json({ message: 'Mot de passe actuel incorrect' });
+        return;
+    }
+
+    user.passwordHash = await bcrypt.hash(newPassword, 12);
+    await user.save();
+
+    res.json({ message: 'Mot de passe modifié avec succès' });
 }
 
 export async function checkUsername(req: Request, res: Response): Promise<void> {
