@@ -5,15 +5,16 @@ import { connectDB } from './src/config/db.js';
 import { logger } from './src/config/logger.js';
 import { errorHandler } from './src/middleware/error.middleware.js';
 
-import authRoutes       from './src/routes/auth.routes.js';
-import profileRoutes    from './src/routes/profile.routes.js';
-import swipeRoutes      from './src/routes/swipe.routes.js';
-import matchRoutes      from './src/routes/match.routes.js';
-import chatRoutes       from './src/routes/chat.routes.js';
-import adminRoutes      from './src/routes/admin.routes.js';
-import devRoutes          from './src/routes/dev.routes.js';
-import subscriptionRoutes from './src/routes/subscription.routes.js';
-import elegieRoutes       from './src/routes/elegie.routes.js';
+import authRoutes           from './src/routes/auth.routes.js';
+import profileRoutes        from './src/routes/profile.routes.js';
+import swipeRoutes          from './src/routes/swipe.routes.js';
+import matchRoutes          from './src/routes/match.routes.js';
+import chatRoutes           from './src/routes/chat.routes.js';
+import adminRoutes          from './src/routes/admin.routes.js';
+import devRoutes            from './src/routes/dev.routes.js';
+import subscriptionRoutes   from './src/routes/subscription.routes.js';
+import elegieRoutes         from './src/routes/elegie.routes.js';
+import eventRoutes          from'./src/routes/event.routes.js';
 
 const app = express();
 const PORT = process.env.PORT ?? 3000;
@@ -32,6 +33,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/dev',          devRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/elegie',       elegieRoutes);
+app.use('/api/events', eventRoutes);
 
 app.get('/health', (_req, res) => res.json({ status: 'ok', app: 'nocturne' }))
 
