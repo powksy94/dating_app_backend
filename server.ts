@@ -1,7 +1,11 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
 import { connectDB } from './src/config/db.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 import { logger } from './src/config/logger.js';
 import { errorHandler } from './src/middleware/error.middleware.js';
 
@@ -21,8 +25,8 @@ const PORT = process.env.PORT ?? 3000;
 
 app.use(cors({ origin: process.env.CORS_ORIGIN ?? '*' }));
 app.use(express.json());
-app.use('/uploads', express.static('uploads'));
-app.use('/admin', express.static('admin-ui'));
+app.use('/uploads', express.static(join(__dirname, 'uploads')));
+app.use('/admin',   express.static(join(__dirname, 'admin-ui')));
 
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
