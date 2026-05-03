@@ -108,16 +108,16 @@ export async function listEvents(req: AuthRequest, res: Response): Promise<void>
 
     if (filterGenres === 'true' && userGenres.length > 0) query.genres = { $in: userGenres };
 
-    if (userLat != null && userLng != null) {
+    if (userLat !== null && userLng !== null) {
         query.location = {
             $near: {
-                $geometry:      { type: 'Point', coordinates: [userLng, userLat] },
-                $maxDistance:   maxDist * 1000,
+                $geometry:    { type: 'Point', coordinates: [userLng, userLat] },
+                $maxDistance: maxDist * 1000,
             },
         };
     }
 
-    const events = await Event.find(query).sort({ date: 1}).limit(50);
+    const events = await Event.find(query).sort({ date: 1 }).limit(50);
 
     const result = await Promise.all(events.map(async (event) => {
         const attendeeIds   = event.attendees.map(a => a.toString());
