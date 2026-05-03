@@ -81,8 +81,8 @@ export async function createEvent(req: AuthRequest, res: Response): Promise<void
 // list Events
 export async function listEvents(req: AuthRequest, res: Response): Promise<void> {
     const userId = new mongoose.Types.ObjectId(req.userId);
-    const { maxDistance, lat, lng } = req.query as {
-        maxDistance?: string; lat?: string; lng?: string;
+    const { maxDistance, lat, lng, filterGenres } = req.query as {
+        maxDistance?: string; lat?: string; lng?: string; filterGenres?: string;
     };
 
     const profile = await Profile.findOne({ owner : userId });
@@ -106,7 +106,7 @@ export async function listEvents(req: AuthRequest, res: Response): Promise<void>
         date:   { $gte: new Date() },
     };
 
-    if (userGenres.length > 0) query.genres = { $in: userGenres };
+    if (filterGenres === 'true' && userGenres.length > 0) query.genres = { $in: userGenres };
 
     if (userLat != null && userLng != null) {
         query.location = {
