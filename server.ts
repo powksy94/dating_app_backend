@@ -1,8 +1,10 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import { createServer } from 'http';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { initSocket } from './src/socket/socket.js';
 import { connectDB } from './src/config/db.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -43,6 +45,9 @@ app.get('/health', (_req, res) => res.json({ status: 'ok', app: 'nocturne' }))
 
 app.use(errorHandler);
 
+const httpServer = createServer(app);
+initSocket(httpServer);
+
 connectDB().then(() => {
-    app.listen(PORT, () => logger.info(`Nocturne backend running on port ${PORT}`));
+    httpServer.listen(PORT, () => logger.info(`Nocturne backend running on port ${PORT}`));
 });
