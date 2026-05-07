@@ -4,6 +4,9 @@ import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import { Message } from '../models/message.model.js';
 import { Match } from '../models/match.model.js';
+import { User } from '../models/user.model.js';
+import { Profile } from '../models/profile.model.js';
+import { sendPushNotification } from '../services/notification.service.js';
 
 // userId → lastSeen timestamp
 const onlineUsers = new Map<string, Date>();
@@ -66,13 +69,14 @@ export function initSocket(httpServer: HttpServer): Server {
         });
 
         // ── Messages ──────────────────────────────────────────────────────────
-        socket.on('send_message', async ({ matchId, text, imageUrl, replyTo }: {
-            matchId:  string;
-            text:     string;
+        socket.on('send_message', async ({ matchId, text, imageUrl, audioUrl, replyTo }: {
+            matchId:   string;
+            text:      string;
             imageUrl?: string;
-            replyTo?: { id: string; text: string; sender: string; imageUrl?: string };
+            audioUrl?: string;
+            replyTo?:  { id: string; text: string; sender: string; imageUrl?: string };
         }) => {
-            if (!text?.trim() && !imageUrl) return;
+            if (!text?.trim() && !imageUrl && !audioUrl) return;
 
             const match = await Match.findOne({ _id: matchId, users: userId });
             if (!match) return;
@@ -82,6 +86,7 @@ export function initSocket(httpServer: HttpServer): Server {
                 sender:   userId,
                 text:     text?.trim() ?? '',
                 imageUrl,
+                audioUrl,
                 replyTo,
             });
 
@@ -91,9 +96,28 @@ export function initSocket(httpServer: HttpServer): Server {
                 sender:    userId,
                 text:      message.text,
                 imageUrl:  message.imageUrl,
+                audioUrl:  message.audioUrl,
                 replyTo:   message.replyTo,
                 createdAt: (message as any).createdAt,
             });
+
+            // Push notification si le destinataire est offline
+            const otherUserId = match.users.find(u => u.toString() !== userId)?.toString();
+            if (otherUserId && !onlineUsers.has(otherUserId)) {
+                const [recipientUser, senderProfile] = await Promise.all([
+                    User.findById(otherUserId).select('fcmToken'),
+                    Profile.findOne({ owner: userId }).select('username'),
+                ]);
+                if (recipientUser?.fcmToken) {
+                    const notifBody = message.imageUrl ? '📷 Photo' : message.text;
+                    await sendPushNotification(
+                        recipientUser.fcmToken,
+                        senderProfile?.username ?? 'Nouveau message',
+                        notifBody,
+                        { matchId, type: 'message' },
+                    );
+                }
+            }
         });
 
         // ── Read receipts ─────────────────────────────────────────────────────
@@ -112,6 +136,38 @@ export function initSocket(httpServer: HttpServer): Server {
             if (!message) return;
             await Message.findByIdAndUpdate(messageId, { deletedForAll: true });
             io.to(matchId).emit('message_deleted_for_all', messageId);
+        });
+
+        // ── Reactions ─────────────────────────────────────────────────────────
+        socket.on('react_message', async ({ matchId, messageId, emoji }: {
+            matchId:   string;
+            messageId: string;
+            emoji:     string;
+        }) => {
+            const message = await Message.findById(messageId);
+            if (!message) return;
+
+            const reactions = message.reactions ?? new Map<string, string[]>();
+            const users     = reactions.get(emoji) ?? [];
+            const idx       = users.indexOf(userId);
+
+            if (idx >= 0) {
+                users.splice(idx, 1);
+            } else {
+                users.push(userId);
+            }
+
+            if (users.length === 0) {
+                reactions.delete(emoji);
+            } else {
+                reactions.set(emoji, users);
+            }
+
+            message.reactions = reactions;
+            await message.save();
+
+            const reactionsObj = Object.fromEntries(reactions);
+            io.to(matchId).emit('message_reacted', { messageId, reactions: reactionsObj });
         });
 
         // ── Typing ────────────────────────────────────────────────────────────

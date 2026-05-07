@@ -1,5 +1,6 @@
 import { Response } from "express";
 import { Profile } from "../models/profile.model.js";
+import { User } from "../models/user.model.js";
 import { AuthRequest } from "../middleware/auth.middleware.js";
 import multer from "multer";
 import cloudinary from "../config/cloudinary.js";
@@ -67,4 +68,11 @@ export async function getProfileByUserId(req: AuthRequest, res: Response): Promi
     const profile = await Profile.findOne({ owner: req.params.userId });
     if (!profile) { res.status(404).json({ message: 'Profile introuvable' }); return };
     res.json(profile);
+}
+
+export async function saveFcmToken(req: AuthRequest, res: Response): Promise<void> {
+    const { token } = req.body as { token: string };
+    if (!token) { res.status(400).json({ message: 'Token requis' }); return; }
+    await User.findByIdAndUpdate(req.userId, { fcmToken: token });
+    res.json({ message: 'Token FCM enregistré' });
 }

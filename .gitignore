@@ -5,3 +5,6 @@ logs/
 uploads/
 admin-ui/
 scripts/
+
+# Firebase Admin SDK key
+*-firebase-adminsdk-*.json

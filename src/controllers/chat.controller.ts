@@ -9,6 +9,7 @@ import cloudinary from "../config/cloudinary.js";
 
 const upload = multer({ storage: multer.memoryStorage() });
 export const uploadChatImageMiddleware = upload.single('image');
+export const uploadChatAudioMiddleware = upload.single('audio');
 
 async function assertMatchMember(matchId: string, userId: string): Promise<boolean> {
     const match = await Match.findById(matchId);
@@ -26,7 +27,7 @@ export async function getMessages(req: AuthRequest, res: Response): Promise<void
     const messages = await Message.find({
         matchId:    req.params.matchId,
         deletedFor: { $ne: userId },
-    }).sort({ createdAt: 1 }).select('-deletedFor');
+    }).sort({ createdAt: 1 }).select('-deletedFor').lean();
     res.json(messages);
 }
 
@@ -55,6 +56,23 @@ export async function uploadChatImage(req: AuthRequest, res: Response): Promise<
     const url = await new Promise<string>((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
             { folder: 'nocturne/chat', resource_type: 'image' },
+            (err, result) => {
+                if (err || !result) reject(err);
+                else resolve(result.secure_url);
+            }
+        );
+        Readable.from(req.file!.buffer).pipe(stream);
+    });
+
+    res.json({ url });
+}
+
+export async function uploadChatAudio(req: AuthRequest, res: Response): Promise<void> {
+    if (!req.file) { res.status(400).json({ message: 'Aucun fichier audio' }); return; }
+
+    const url = await new Promise<string>((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+            { folder: 'nocturne/chat/audio', resource_type: 'video' },
             (err, result) => {
                 if (err || !result) reject(err);
                 else resolve(result.secure_url);
