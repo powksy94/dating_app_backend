@@ -1,9 +1,16 @@
 import { Request, Response } from "express";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import { User } from "../models/user.model.js";
 import { Profile } from "../models/profile.model.js";
+import { Like } from "../models/like.model.js";
+import { Match } from "../models/match.model.js";
+import { Message } from "../models/message.model.js";
+import { Elegie } from "../models/elegie.model.js";
+import { Event } from "../models/event.model.js";
 import { containsBannedWord } from "../data/banned-words.js";
+import cloudinary from "../config/cloudinary.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
 
 export async function register(req: Request, res: Response): Promise<void> {
@@ -120,4 +127,38 @@ export async function checkUsername(req: Request, res: Response): Promise<void> 
 
     const exists = await Profile.findOne({ username: username.trim() });
     res.json({ available: !exists });
+}
+
+export async function deleteAccount(req: AuthRequest, res: Response): Promise<void> {
+    const userId = new mongoose.Types.ObjectId(req.userId);
+
+    // Récupère les photos Cloudinary avant suppression
+    const profile = await Profile.findOne({ owner: userId });
+    if (profile?.photos?.length) {
+        for (const url of profile.photos) {
+            try {
+                const parts   = url.split('/');
+                const file    = parts[parts.length - 1].split('.')[0];
+                const folder  = parts[parts.length - 2];
+                await cloudinary.uploader.destroy(`${folder}/${file}`);
+            } catch (_) {}
+        }
+    }
+
+    // Récupère les matchIds pour supprimer les messages
+    const matches  = await Match.find({ users: userId });
+    const matchIds = matches.map(m => m._id);
+
+    await Promise.all([
+        Message.deleteMany({ matchId: { $in: matchIds } }),
+        Match.deleteMany({ users: userId }),
+        Like.deleteMany({ $or: [{ from: userId }, { to: userId }] }),
+        Elegie.deleteMany({ $or: [{ from: userId }, { to: userId }] }),
+        Event.updateMany({ attendees: userId }, { $pull: { attendees: userId } }),
+        Profile.deleteOne({ owner: userId }),
+    ]);
+
+    await User.deleteOne({ _id: userId });
+
+    res.json({ message: 'Compte supprimé avec succès' });
 }

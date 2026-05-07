@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { register, login, me, checkUsername, changePassword } from '../controllers/auth.controller.js';
+import { register, login, me, checkUsername, changePassword, deleteAccount } from '../controllers/auth.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
 
 
@@ -10,5 +10,6 @@ router.post('/login',    login);
 router.get('/me',        authMiddleware, me);
 router.get('/check-username',      checkUsername);
 router.post('/change-password',    authMiddleware, changePassword);
+router.delete('/account',          authMiddleware, deleteAccount);
 
 export default router;
