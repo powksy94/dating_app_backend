@@ -25,6 +25,7 @@ export async function getMyMatches(req: AuthRequest, res: Response): Promise<voi
 
         return {
             matchId:        match._id,
+            userId:         otherUserId?.toString() ?? '',
             username:       profile?.username ?? 'Utilisateur inconnu',
             avatarUrl:      profile?.avatarUrl ?? '',
             lastMessage:    lastMessage

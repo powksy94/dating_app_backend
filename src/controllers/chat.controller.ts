@@ -12,11 +12,15 @@ async function assertMatchMember(matchId: string, userId: string): Promise<boole
 }
 
 export async function getMessages(req: AuthRequest, res: Response): Promise<void> {
+    const userId = new mongoose.Types.ObjectId(req.userId!);
     if (!await assertMatchMember(req.params.matchId as string, req.userId!)) {
         res.status(403).json({ message: 'Accès refusé' });
         return;
     }
-    const messages = await Message.find({ matchId: req.params.matchId}).sort({ createdAt: 1});
+    const messages = await Message.find({
+        matchId:    req.params.matchId,
+        deletedFor: { $ne: userId },
+    }).sort({ createdAt: 1 });
     res.json(messages);
 }
 
@@ -37,4 +41,30 @@ export async function sendMessage(req: AuthRequest, res: Response): Promise<void
         text:    text.trim(),
     });
     res.status(201).json(message);
+}
+
+export async function deleteForMe(req: AuthRequest, res: Response): Promise<void> {
+    const userId    = new mongoose.Types.ObjectId(req.userId!);
+    const messageId = req.params.messageId;
+
+    const message = await Message.findById(messageId);
+    if (!message) { res.status(404).json({ message: 'Message introuvable' }); return; }
+
+    await Message.findByIdAndUpdate(messageId, { $addToSet: { deletedFor: userId } });
+    res.json({ message: 'Message supprimé pour vous' });
+}
+
+export async function deleteForAll(req: AuthRequest, res: Response): Promise<void> {
+    const userId    = new mongoose.Types.ObjectId(req.userId!);
+    const messageId = req.params.messageId;
+
+    const message = await Message.findById(messageId);
+    if (!message) { res.status(404).json({ message: 'Message introuvable' }); return; }
+    if (!message.sender.equals(userId)) {
+        res.status(403).json({ message: 'Seul l\'expéditeur peut supprimer pour tous' });
+        return;
+    }
+
+    await Message.findByIdAndUpdate(messageId, { deletedForAll: true });
+    res.json({ messageId, deletedForAll: true });
 }
