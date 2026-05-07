@@ -3,6 +3,12 @@ import { Message } from "../models/message.model.js";
 import { Match } from "../models/match.model.js";
 import { AuthRequest } from "../middleware/auth.middleware.js";
 import mongoose from "mongoose";
+import multer from "multer";
+import { Readable } from "stream";
+import cloudinary from "../config/cloudinary.js";
+
+const upload = multer({ storage: multer.memoryStorage() });
+export const uploadChatImageMiddleware = upload.single('image');
 
 async function assertMatchMember(matchId: string, userId: string): Promise<boolean> {
     const match = await Match.findById(matchId);
@@ -20,7 +26,7 @@ export async function getMessages(req: AuthRequest, res: Response): Promise<void
     const messages = await Message.find({
         matchId:    req.params.matchId,
         deletedFor: { $ne: userId },
-    }).sort({ createdAt: 1 });
+    }).sort({ createdAt: 1 }).select('-deletedFor');
     res.json(messages);
 }
 
@@ -41,6 +47,23 @@ export async function sendMessage(req: AuthRequest, res: Response): Promise<void
         text:    text.trim(),
     });
     res.status(201).json(message);
+}
+
+export async function uploadChatImage(req: AuthRequest, res: Response): Promise<void> {
+    if (!req.file) { res.status(400).json({ message: 'Aucune image' }); return; }
+
+    const url = await new Promise<string>((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+            { folder: 'nocturne/chat', resource_type: 'image' },
+            (err, result) => {
+                if (err || !result) reject(err);
+                else resolve(result.secure_url);
+            }
+        );
+        Readable.from(req.file!.buffer).pipe(stream);
+    });
+
+    res.json({ url });
 }
 
 export async function deleteForMe(req: AuthRequest, res: Response): Promise<void> {

@@ -1,6 +1,7 @@
 import { Server } from 'socket.io';
 import { Server as HttpServer } from 'http';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import { Message } from '../models/message.model.js';
 import { Match } from '../models/match.model.js';
 
@@ -65,16 +66,23 @@ export function initSocket(httpServer: HttpServer): Server {
         });
 
         // ── Messages ──────────────────────────────────────────────────────────
-        socket.on('send_message', async ({ matchId, text }: { matchId: string; text: string }) => {
-            if (!text?.trim()) return;
+        socket.on('send_message', async ({ matchId, text, imageUrl, replyTo }: {
+            matchId:  string;
+            text:     string;
+            imageUrl?: string;
+            replyTo?: { id: string; text: string; sender: string; imageUrl?: string };
+        }) => {
+            if (!text?.trim() && !imageUrl) return;
 
             const match = await Match.findOne({ _id: matchId, users: userId });
             if (!match) return;
 
             const message = await Message.create({
                 matchId,
-                sender: userId,
-                text:   text.trim(),
+                sender:   userId,
+                text:     text?.trim() ?? '',
+                imageUrl,
+                replyTo,
             });
 
             io.to(matchId).emit('new_message', {
@@ -82,8 +90,20 @@ export function initSocket(httpServer: HttpServer): Server {
                 matchId,
                 sender:    userId,
                 text:      message.text,
+                imageUrl:  message.imageUrl,
+                replyTo:   message.replyTo,
                 createdAt: (message as any).createdAt,
             });
+        });
+
+        // ── Read receipts ─────────────────────────────────────────────────────
+        socket.on('mark_read', async (matchId: string) => {
+            const userObjId = new mongoose.Types.ObjectId(userId);
+            await Message.updateMany(
+                { matchId, sender: { $ne: userObjId }, readBy: { $ne: userObjId } },
+                { $addToSet: { readBy: userObjId } }
+            );
+            socket.to(matchId).emit('messages_read', { matchId, readBy: userId });
         });
 
         // ── Delete for all ────────────────────────────────────────────────────
