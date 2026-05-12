@@ -5,6 +5,8 @@ import { Like } from '../models/like.model.js';
 import { Match } from '../models/match.model.js';
 import { Message } from '../models/message.model.js';
 import { Profile } from '../models/profile.model.js';
+import { User } from '../models/user.model.js';
+import { sendPushNotification } from '../services/notification.service.js';
 import mongoose from 'mongoose';
 
 export async function sendElegie(req: AuthRequest, res: Response): Promise<void> {
@@ -47,8 +49,46 @@ export async function sendElegie(req: AuthRequest, res: Response): Promise<void>
             sender:  fromId,
             text:    text.trim(),
         });
+        // Notifications match aux deux
+        const [fromProfile, toProfile, fromUser, toUser] = await Promise.all([
+            Profile.findOne({ owner: fromId }).select('username'),
+            Profile.findOne({ owner: toId }).select('username'),
+            User.findById(fromId).select('fcmToken'),
+            User.findById(toId).select('fcmToken'),
+        ]);
+        if (toUser?.fcmToken) {
+            await sendPushNotification(
+                toUser.fcmToken,
+                '🖤 Nouveau match !',
+                `Tu as matché avec ${fromProfile?.username ?? 'quelqu\'un'}`,
+                { matchId: matchDoc._id.toString(), type: 'match' },
+            );
+        }
+        if (fromUser?.fcmToken) {
+            await sendPushNotification(
+                fromUser.fcmToken,
+                '🖤 Nouveau match !',
+                `Tu as matché avec ${toProfile?.username ?? 'quelqu\'un'}`,
+                { matchId: matchDoc._id.toString(), type: 'match' },
+            );
+        }
+
         res.json({ message: 'Élégie envoyée', match: true, matchId: matchDoc._id });
         return;
+    }
+
+    // Notification élégie reçue
+    const [senderProfile, recipientUser] = await Promise.all([
+        Profile.findOne({ owner: fromId }).select('username'),
+        User.findById(toId).select('fcmToken'),
+    ]);
+    if (recipientUser?.fcmToken) {
+        await sendPushNotification(
+            recipientUser.fcmToken,
+            '✉️ Nouvelle élégie',
+            `${senderProfile?.username ?? 'Quelqu\'un'} t\'a envoyé une élégie`,
+            { type: 'elegie', fromId: fromId.toString() },
+        );
     }
 
     res.json({ message: 'Élégie envoyée', match: false });

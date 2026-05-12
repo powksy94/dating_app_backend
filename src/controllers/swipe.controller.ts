@@ -4,7 +4,9 @@ import { Match } from "../models/match.model.js";
 import { Profile } from "../models/profile.model.js";
 import { Elegie } from "../models/elegie.model.js";
 import { Message } from "../models/message.model.js";
+import { User } from "../models/user.model.js";
 import { AuthRequest } from "../middleware/auth.middleware.js";
+import { sendPushNotification } from "../services/notification.service.js";
 import mongoose from "mongoose";
 
 export async function likeUser(req: AuthRequest, res: Response): Promise<void> {
@@ -37,6 +39,30 @@ export async function likeUser(req: AuthRequest, res: Response): Promise<void> {
                 text:    elegie.text,
             });
         }
+        // Notifications match aux deux utilisateurs
+        const [fromProfile, toProfile, fromUser, toUser] = await Promise.all([
+            Profile.findOne({ owner: fromId }).select('username'),
+            Profile.findOne({ owner: toId }).select('username'),
+            User.findById(fromId).select('fcmToken'),
+            User.findById(toId).select('fcmToken'),
+        ]);
+        if (toUser?.fcmToken) {
+            await sendPushNotification(
+                toUser.fcmToken,
+                '🖤 Nouveau match !',
+                `Tu as matché avec ${fromProfile?.username ?? 'quelqu\'un'}`,
+                { matchId: matchDoc._id.toString(), type: 'match' },
+            );
+        }
+        if (fromUser?.fcmToken) {
+            await sendPushNotification(
+                fromUser.fcmToken,
+                '🖤 Nouveau match !',
+                `Tu as matché avec ${toProfile?.username ?? 'quelqu\'un'}`,
+                { matchId: matchDoc._id.toString(), type: 'match' },
+            );
+        }
+
         res.json({ match: true, matchId: matchDoc._id });
         return;
     }
