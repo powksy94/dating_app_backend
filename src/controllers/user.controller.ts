@@ -8,7 +8,8 @@ import { Like } from '../models/like.model.js';
 
 export async function blockUser(req: AuthRequest, res: Response): Promise<void> {
     const blockerId = new mongoose.Types.ObjectId(req.userId);
-    const blockedId = new mongoose.Types.ObjectId(String(req.params.id));
+    const targetId  = req.params['id'] as string;
+    const blockedId = new mongoose.Types.ObjectId(targetId);
 
     if (blockerId.equals(blockedId)) {
         res.status(400).json({ message: 'Impossible de se bloquer soi-même' });
@@ -35,7 +36,8 @@ export async function blockUser(req: AuthRequest, res: Response): Promise<void> 
 
 export async function unblockUser(req: AuthRequest, res: Response): Promise<void> {
     const blockerId = new mongoose.Types.ObjectId(req.userId);
-    const blockedId = new mongoose.Types.ObjectId(String(req.params.id));
+    const targetId  = req.params['id'] as string;
+    const blockedId = new mongoose.Types.ObjectId(targetId);
 
     await Block.deleteOne({ blocker: blockerId, blocked: blockedId });
     res.json({ message: 'Utilisateur débloqué' });
@@ -43,7 +45,8 @@ export async function unblockUser(req: AuthRequest, res: Response): Promise<void
 
 export async function reportUser(req: AuthRequest, res: Response): Promise<void> {
     const reporterId = new mongoose.Types.ObjectId(req.userId);
-    const reportedId = new mongoose.Types.ObjectId(req.params.id);
+    const targetId   = req.params['id'] as string;
+    const reportedId = new mongoose.Types.ObjectId(targetId);
     const { reason } = req.body as { reason: string };
 
     if (!reason?.trim()) {
