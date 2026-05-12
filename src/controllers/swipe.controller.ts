@@ -7,6 +7,7 @@ import { Message } from "../models/message.model.js";
 import { User } from "../models/user.model.js";
 import { AuthRequest } from "../middleware/auth.middleware.js";
 import { sendPushNotification } from "../services/notification.service.js";
+import { getBlockedIds } from "./user.controller.js";
 import mongoose from "mongoose";
 
 export async function likeUser(req: AuthRequest, res: Response): Promise<void> {
@@ -115,10 +116,12 @@ export async function fecthSwipeProfiles(req: AuthRequest, res: Response): Promi
     const userId = new mongoose.Types.ObjectId(req.userId);
 
     // ID already liked by this user
-    const liked = await Like.find({ from: userId }).distinct('to');
+    const liked      = await Like.find({ from: userId }).distinct('to');
+    const blockedIds = await getBlockedIds(userId.toString());
+    const excluded   = [...liked, ...blockedIds.map(id => new mongoose.Types.ObjectId(id))];
 
     const profiles = await Profile.find({
-        owner: { $nin: [userId, ...liked] },
+        owner: { $nin: [userId, ...excluded] },
     }).limit(20);
 
     res.json(profiles);

@@ -20,7 +20,8 @@ import adminRoutes          from './src/routes/admin.routes.js';
 import devRoutes            from './src/routes/dev.routes.js';
 import subscriptionRoutes   from './src/routes/subscription.routes.js';
 import elegieRoutes         from './src/routes/elegie.routes.js';
-import eventRoutes          from'./src/routes/event.routes.js';
+import eventRoutes          from './src/routes/event.routes.js';
+import userRoutes           from './src/routes/user.routes.js';
 
 const app = express();
 const PORT = process.env.PORT ?? 3000;
@@ -40,6 +41,7 @@ app.use('/api/dev',          devRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/elegie',       elegieRoutes);
 app.use('/api/events', eventRoutes);
+app.use('/api/users',  userRoutes);
 
 app.get('/health', (_req, res) => res.json({ status: 'ok', app: 'nocturne' }))
 

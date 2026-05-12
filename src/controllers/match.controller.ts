@@ -23,11 +23,20 @@ export async function getMyMatches(req: AuthRequest, res: Response): Promise<voi
             { text: 1, sender: 1, createdAt: 1 }
         ).sort({ createdAt: -1 });
 
+        const unreadCount = await Message.countDocuments({
+            matchId:      match._id,
+            sender:       { $ne: userId },
+            readBy:       { $ne: userId },
+            deletedFor:   { $ne: userId },
+            deletedForAll: false,
+        });
+
         return {
             matchId:        match._id,
             userId:         otherUserId?.toString() ?? '',
             username:       profile?.username ?? 'Utilisateur inconnu',
             avatarUrl:      profile?.avatarUrl ?? '',
+            unreadCount,
             lastMessage:    lastMessage
                 ? { text: lastMessage.text, createdAt: (lastMessage as any).createdAt }
                 : null,
