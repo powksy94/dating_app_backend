@@ -101,9 +101,15 @@ export function initSocket(httpServer: HttpServer): Server {
                 createdAt: (message as any).createdAt,
             });
 
-            // Push notification si le destinataire est offline
-            const otherUserId = match.users.find(u => u.toString() !== userId)?.toString();
-            if (otherUserId && !onlineUsers.has(otherUserId)) {
+            // Push notification si le destinataire n'est pas dans la salle de conversation
+            const otherUserId  = match.users.find(u => u.toString() !== userId)?.toString();
+            const roomMembers  = io.sockets.adapter.rooms.get(matchId) ?? new Set();
+            const otherSockets = [...io.sockets.sockets.values()]
+                .filter(s => s.data.userId === otherUserId)
+                .map(s => s.id);
+            const otherInRoom  = otherSockets.some(sid => roomMembers.has(sid));
+
+            if (otherUserId && !otherInRoom) {
                 const [recipientUser, senderProfile] = await Promise.all([
                     User.findById(otherUserId).select('fcmToken'),
                     Profile.findOne({ owner: userId }).select('username'),
