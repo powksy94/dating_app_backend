@@ -1,7 +1,11 @@
 import { Response } from "express";
 import { Message } from "../models/message.model.js";
 import { Match } from "../models/match.model.js";
+import { User } from "../models/user.model.js";
+import { Profile } from "../models/profile.model.js";
 import { AuthRequest } from "../middleware/auth.middleware.js";
+import { getIO } from "../socket/socket.js";
+import { sendPushNotification } from "../services/notification.service.js";
 import mongoose from "mongoose";
 import multer from "multer";
 import { Readable } from "stream";
@@ -42,11 +46,50 @@ export async function sendMessage(req: AuthRequest, res: Response): Promise<void
         return;
     }
 
+    const matchId = req.params.matchId as string;
+    const userId  = req.userId!;
+
     const message = await Message.create({
-        matchId: req.params.matchId as string,
-        sender:  req.userId,
-        text:    text.trim(),
+        matchId,
+        sender: userId,
+        text:   text.trim(),
     });
+
+    // Broadcast socket
+    try {
+        const io = getIO();
+        io.to(matchId).emit('new_message', {
+            _id:       message._id.toString(),
+            matchId,
+            sender:    userId,
+            text:      message.text,
+            createdAt: (message as any).createdAt,
+        });
+
+        // Push notification si destinataire pas dans la room
+        const match         = await Match.findById(matchId);
+        const otherUserId   = match?.users.find(u => u.toString() !== userId)?.toString();
+        const roomMembers   = io.sockets.adapter.rooms.get(matchId) ?? new Set();
+        const otherSockets  = [...io.sockets.sockets.values()]
+            .filter(s => s.data.userId === otherUserId).map(s => s.id);
+        const otherInRoom   = otherSockets.some(sid => roomMembers.has(sid));
+
+        if (otherUserId && !otherInRoom) {
+            const [recipientUser, senderProfile] = await Promise.all([
+                User.findById(otherUserId).select('fcmToken'),
+                Profile.findOne({ owner: userId }).select('username'),
+            ]);
+            if (recipientUser?.fcmToken) {
+                await sendPushNotification(
+                    recipientUser.fcmToken,
+                    senderProfile?.username ?? 'Nouveau message',
+                    text.trim(),
+                    { matchId, type: 'message' },
+                );
+            }
+        }
+    } catch (_) {}
+
     res.status(201).json(message);
 }
 

@@ -11,6 +11,12 @@ import { sendPushNotification } from '../services/notification.service.js';
 // userId → lastSeen timestamp
 const onlineUsers = new Map<string, Date>();
 
+let _io: Server | null = null;
+export function getIO(): Server {
+    if (!_io) throw new Error('Socket.io non initialisé');
+    return _io;
+}
+
 export function isUserOnline(userId: string): boolean {
     return onlineUsers.has(userId);
 }
@@ -36,6 +42,7 @@ export function initSocket(httpServer: HttpServer): Server {
         }
     });
 
+    _io = io;
     io.on('connection', (socket) => {
         const userId: string = socket.data.userId;
 
