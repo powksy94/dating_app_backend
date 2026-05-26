@@ -1,13 +1,13 @@
 import { Request, Response } from "express";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
-import { Admin } from "../models/admin.model.js";
-import { User } from "../models/user.model.js";
-import { Profile } from "../models/profile.model.js";
-import { Like } from "../models/like.model.js";
-import { Match } from "../models/match.model.js";
-import { Message } from "../models/message.model.js";
-import { logger } from "../config/logger.js";
+import { Admin } from "../../models/admin.model.js";
+import { User } from "../../models/user.model.js";
+import { Profile } from "../../models/profile.model.js";
+import { Like } from "../../models/like.model.js";
+import { Match } from "../../models/match.model.js";
+import { Message } from "../../models/message.model.js";
+import { logger } from "../../config/logger.js";
 
 export async function adminLogin(req: Request, res: Response): Promise<void> {
     const { email, password } = req.body;

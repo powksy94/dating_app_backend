@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { adminLogin, getStats } from "../controllers/admin.controller.js";
+import { adminLogin, getStats } from "../controllers/admin/admin.controller.js";
 import { adminMiddleware } from "../middleware/admin.middleware.js";
 
 const router = Router();
