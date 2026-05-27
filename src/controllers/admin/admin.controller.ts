@@ -40,17 +40,43 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
     res.json({ token, adminId: admin._id });
 }
 
+const HISTORY_PIPELINE = (since: Date) => [
+    { $match: { createdAt: { $gte: since } } },
+    { $group: {
+        _id:   { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: 'Europe/Paris' } },
+        value: { $sum: 1 },
+    }},
+    { $sort: { _id: 1 as const } },
+    { $project: { _id: 0, date: '$_id', value: 1 } },
+];
+
+function fillHistory(
+    rows: { date: string; value: number }[],
+    since: Date,
+): { date: string; value: number }[] {
+    const map = new Map(rows.map(r => [r.date, r.value]));
+    const out: { date: string; value: number }[] = [];
+    for (let i = 6; i >= 0; i--) {
+        const d   = new Date(since.getTime() + (6 - i) * 86_400_000);
+        const key = d.toISOString().slice(0, 10);
+        out.push({ date: key, value: map.get(key) ?? 0 });
+    }
+    return out;
+}
+
 export async function getStats(_req: Request, res: Response): Promise<void> {
-    const now          = new Date();
-    const d30          = new Date(now.getTime() - 30 * 86_400_000);
-    const d60          = new Date(now.getTime() - 60 * 86_400_000);
+    const now = new Date();
+    const d7  = new Date(now.getTime() -  7 * 86_400_000);
+    const d30 = new Date(now.getTime() - 30 * 86_400_000);
+    const d60 = new Date(now.getTime() - 60 * 86_400_000);
 
     const [
         users, profiles, likes, matches, messages,
-        usersLast30, usersPrev30,
-        likesLast30,  likesPrev30,
+        usersLast30,   usersPrev30,
+        likesLast30,   likesPrev30,
         matchesLast30, matchesPrev30,
         messagesLast30, messagesPrev30,
+        usersHist, likesHist, matchesHist, messagesHist,
     ] = await Promise.all([
         User.countDocuments(),
         Profile.countDocuments(),
@@ -65,18 +91,25 @@ export async function getStats(_req: Request, res: Response): Promise<void> {
         Match.countDocuments({ createdAt: { $gte: d60, $lt: d30 } }),
         Message.countDocuments({ createdAt: { $gte: d30 } }),
         Message.countDocuments({ createdAt: { $gte: d60, $lt: d30 } }),
+        User.aggregate(HISTORY_PIPELINE(d7)),
+        Like.aggregate(HISTORY_PIPELINE(d7)),
+        Match.aggregate(HISTORY_PIPELINE(d7)),
+        Message.aggregate(HISTORY_PIPELINE(d7)),
     ]);
 
-    function trend(current: number, prev: number, label = 'ce mois') {
+    function trend(current: number, prev: number, hist: { date: string; value: number }[], label = 'ce mois') {
         const delta        = current - prev;
         const deltaPercent = prev === 0
             ? (current > 0 ? 100 : 0)
             : Math.round((delta / prev) * 100);
+        const history = fillHistory(hist, d7);
+        const hasData = history.some(h => h.value > 0);
         return {
             deltaPercent,
             delta,
             secondaryValue: current,
             secondaryLabel: `${delta >= 0 ? '+' : ''}${delta} ${label}`,
+            ...(hasData ? { history } : {}),
         };
     }
 
@@ -84,10 +117,10 @@ export async function getStats(_req: Request, res: Response): Promise<void> {
     res.json({
         users, profiles, likes, matches, messages,
         trends: {
-            users:    trend(usersLast30,    usersPrev30),
-            likes:    trend(likesLast30,    likesPrev30),
-            matches:  trend(matchesLast30,  matchesPrev30),
-            messages: trend(messagesLast30, messagesPrev30),
+            users:    trend(usersLast30,    usersPrev30,    usersHist),
+            likes:    trend(likesLast30,    likesPrev30,    likesHist),
+            matches:  trend(matchesLast30,  matchesPrev30,  matchesHist),
+            messages: trend(messagesLast30, messagesPrev30, messagesHist),
         },
     });
 }
