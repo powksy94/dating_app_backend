@@ -23,34 +23,35 @@ function cleanup() {
     }
 }
 
+setInterval(cleanup, 60_000);
+
 export async function requestAuth(req: Request, res: Response): Promise<void> {
     const { email } = req.body;
     if (!email) { res.status(400).json({ message: 'email requis' }); return; }
 
-    const admin = await Admin.findOne({ email: email.toLowerCase() });
-    if (!admin) { res.status(403).json({ message: 'Email non autorisé' }); return; }
+    const sessionId = randomUUID();
 
-    const user = await User.findOne({ email: email.toLowerCase() }).select('fcmToken');
-    if (!user?.fcmToken) {
-        res.status(400).json({ message: 'Aucun appareil enregistré pour cet admin' });
-        return;
-    }
+    const [admin, user] = await Promise.all([
+        Admin.findOne({ email: email.toLowerCase() }),
+        User.findOne({ email: email.toLowerCase() }).select('fcmToken'),
+    ]);
 
     cleanup();
-
-    const sessionId = randomUUID();
     sessions.set(sessionId, {
         email:     email.toLowerCase(),
         status:    'pending',
         expiresAt: Date.now() + TTL_MS,
     });
 
-    await sendPushNotification(
-        user.fcmToken,
-        '🔐 Connexion admin',
-        'Demande de connexion au panel admin. Approuves-tu ?',
-        { type: 'admin_auth', sessionId },
-    );
+    // Anti-énumération : réponse identique que l'email soit admin ou non
+    if (admin && user?.fcmToken) {
+        sendPushNotification(
+            user.fcmToken,
+            '🔐 Connexion admin',
+            'Demande de connexion au panel admin. Approuves-tu ?',
+            { type: 'admin_auth', sessionId },
+        ).catch(() => {});
+    }
 
     res.json({ sessionId });
 }
@@ -105,7 +106,7 @@ export async function respondAuth(req: AuthRequest, res: Response): Promise<void
     if (!admin) { res.status(500).json({ message: 'Admin introuvable' }); return; }
 
     const token = jwt.sign(
-        { adminId: admin._id, role: 'admin' },
+        { userId: admin._id.toString(), email: session.email, role: 'admin' },
         process.env.JWT_SECRET!,
         { expiresIn: (process.env.JWT_EXPIRES_IN ?? '7d') as any },
     );
