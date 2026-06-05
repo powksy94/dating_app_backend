@@ -71,7 +71,7 @@ export async function getProfileByUserId(req: AuthRequest, res: Response): Promi
     // Enregistrer la visite en arrière-plan (sans bloquer la réponse)
     if (req.userId !== req.params.userId) {
         import('../controllers/visit.controller.js')
-            .then(({ recordVisit }) => recordVisit(req.userId!, req.params.userId))
+            .then(({ recordVisit }) => recordVisit(req.userId!, String(req.params.userId)))
             .catch(() => {});
     }
 

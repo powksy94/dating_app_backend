@@ -4,14 +4,14 @@ import { Match } from "../models/match.model.js";
 import { Profile } from "../models/profile.model.js";
 import { Elegie } from "../models/elegie.model.js";
 import { Message } from "../models/message.model.js";
-import { User } from "../models/user.model.js";
+import { User, IUser } from "../models/user.model.js";
 import { AuthRequest } from "../middleware/auth.middleware.js";
 import { sendPushNotification } from "../services/notification.service.js";
 import { getBlockedIds } from "./user.controller.js";
-import { PLAN_LIMITS, todayStr } from "../utils/subscription-limits.js";
+import { PLAN_LIMITS, Plan, todayStr } from "../utils/subscription-limits.js";
 import mongoose from "mongoose";
 
-async function checkSwipeLimit(user: Awaited<ReturnType<typeof User.findById>> & NonNullable<unknown>): Promise<{ blocked: boolean; remaining: number | null }> {
+async function checkSwipeLimit(user: IUser): Promise<{ blocked: boolean; remaining: number | null }> {
     const limit = PLAN_LIMITS.swipesPerDay[user.subscriptionPlan];
     if (limit === Infinity) return { blocked: false, remaining: null };
 
