@@ -66,7 +66,15 @@ export async function uploadPhotos(req: AuthRequest, res: Response): Promise<voi
 
 export async function getProfileByUserId(req: AuthRequest, res: Response): Promise<void> {
     const profile = await Profile.findOne({ owner: req.params.userId });
-    if (!profile) { res.status(404).json({ message: 'Profile introuvable' }); return };
+    if (!profile) { res.status(404).json({ message: 'Profile introuvable' }); return; }
+
+    // Enregistrer la visite en arrière-plan (sans bloquer la réponse)
+    if (req.userId !== req.params.userId) {
+        import('../controllers/visit.controller.js')
+            .then(({ recordVisit }) => recordVisit(req.userId!, req.params.userId))
+            .catch(() => {});
+    }
+
     res.json(profile);
 }
 

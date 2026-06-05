@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import { authMiddleware } from '../middleware/auth.middleware.js';
-import { getMySubscription } from '../controllers/subscription.controller.js';
+import { getMySubscription, subscribe, cancelSubscription } from '../controllers/subscription.controller.js';
 
 const router = Router();
 router.use(authMiddleware);
-router.get('/', getMySubscription);
+router.get('/',         getMySubscription);
+router.post('/subscribe', subscribe);
+router.post('/cancel',    cancelSubscription);
 
 export default router;
