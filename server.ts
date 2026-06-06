@@ -41,7 +41,7 @@ app.use('/api/matches', matchRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/admin',      adminRoutes);
 app.use('/api/admin-auth', adminAuthRoutes);
-app.use('/api/dev',          devRoutes);
+if (process.env.NODE_ENV !== 'production') app.use('/api/dev', devRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/elegie',       elegieRoutes);
 app.use('/api/events', eventRoutes);

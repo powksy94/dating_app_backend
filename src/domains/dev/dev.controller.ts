@@ -3,6 +3,8 @@ import bcrypt from 'bcrypt';
 import { User } from "../../shared/models/user.model.js";
 import { Profile } from "../profile/profile.model.js";
 import { Like } from "../discovery/like.model.js";
+import { Match } from "../match/match.model.js";
+import { Elegie } from "../elegie/elegie.model.js";
 import { AuthRequest } from "../../shared/middleware/auth.middleware.js";
 import mongoose from "mongoose";
 
@@ -109,4 +111,19 @@ export async function seedDemoLikes(req: AuthRequest, res: Response): Promise<vo
     }
 
     res.json({ message: 'Likes démo insérés', liked });
+}
+
+export async function resetAllData(_req: Request, res: Response): Promise<void> {
+    const [likes, matches, elegies] = await Promise.all([
+        Like.deleteMany({}),
+        Match.deleteMany({}),
+        Elegie.deleteMany({}),
+    ]);
+
+    res.json({
+        message: 'Reset complet',
+        likes:   likes.deletedCount,
+        matches: matches.deletedCount,
+        elegies: elegies.deletedCount,
+    });
 }
