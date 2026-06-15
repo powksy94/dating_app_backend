@@ -7,6 +7,8 @@ export interface IUser extends Document {
     subscriptionPlan: 'ombre' | 'nocturne' | 'abyssal';
     subscriptionPeriod: 'week' | 'month' | 'year';
     fcmToken?: string;
+    refreshToken?:       string;
+    refreshTokenExpiry?: Date;
     dailySwipes:    { count: number; date: string };
     monthlyElegies: { count: number; month: string };
     monthlyEvents:  { count: number; month: string };
@@ -18,7 +20,9 @@ const UserSchema = new Schema<IUser>({
     passwordHash:       { type: String, required: true },
     subscriptionPlan:   { type: String, enum: ['ombre','nocturne','abyssal'], default: 'ombre' },
     subscriptionPeriod: { type: String, enum: ['week','month','year'], default: 'month' },
-    fcmToken:           { type: String },
+    fcmToken:            { type: String },
+    refreshToken:        { type: String, default: null },
+    refreshTokenExpiry:  { type: Date,   default: null },
     dailySwipes: {
         count: { type: Number, default: 0 },
         date:  { type: String, default: '' },

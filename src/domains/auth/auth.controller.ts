@@ -1,6 +1,7 @@
 ﻿import { Request, Response } from "express";
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 import mongoose from 'mongoose';
 import { User } from "../../shared/models/user.model.js";
 import { Profile } from "../profile/profile.model.js";
@@ -12,6 +13,13 @@ import { Event } from "../event/event.model.js";
 import { containsBannedWord } from "../../shared/data/banned-words.js";
 import cloudinary from "../../infrastructure/config/cloudinary.js";
 import type { AuthRequest } from "../../shared/middleware/auth.middleware.js";
+
+function generateTokenPair(userId: string): { accessToken: string; refreshToken: string; refreshTokenExpiry: Date } {
+    const accessToken       = jwt.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: '1h' });
+    const refreshToken      = crypto.randomBytes(64).toString('hex');
+    const refreshTokenExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 jours
+    return { accessToken, refreshToken, refreshTokenExpiry };
+}
 
 export async function register(req: Request, res: Response): Promise<void> {
     const { email, password, username } = req.body;
@@ -32,11 +40,10 @@ export async function register(req: Request, res: Response): Promise<void> {
     // Create an empty profile linked to this user
     await Profile.create({ owner: user._id, username });
 
-    const token = jwt.sign({ userId: user._id.toString() }, process.env.JWT_SECRET!, {
-        expiresIn: (process.env.JWT_EXPIRES_IN ?? '7d') as any,
-    });
+    const { accessToken, refreshToken, refreshTokenExpiry } = generateTokenPair(user._id.toString());
+    await User.findByIdAndUpdate(user._id, { refreshToken, refreshTokenExpiry });
 
-    res.status(201).json({ token, userId: user._id });
+    res.status(201).json({ token: accessToken, refreshToken, userId: user._id });
 }
 
 export async function login(req: Request, res: Response): Promise<void> {
@@ -58,11 +65,10 @@ export async function login(req: Request, res: Response): Promise<void> {
         return;
     }
 
-    const token = jwt.sign({ userId: user._id.toString() }, process.env.JWT_SECRET!, {
-        expiresIn: (process.env.JWT_EXPIRES_IN ?? '7d') as any,
-    });
+    const { accessToken, refreshToken, refreshTokenExpiry } = generateTokenPair(user._id.toString());
+    await User.findByIdAndUpdate(user._id, { refreshToken, refreshTokenExpiry });
 
-    res.json({ token, userId: user._id });
+    res.json({ token: accessToken, refreshToken, userId: user._id });
 }
 
 export async function me(req: Request, res: Response): Promise<void> {
@@ -127,6 +133,24 @@ export async function checkUsername(req: Request, res: Response): Promise<void> 
 
     const exists = await Profile.findOne({ username: username.trim() });
     res.json({ available: !exists });
+}
+
+export async function refresh(req: Request, res: Response): Promise<void> {
+    const { refreshToken } = req.body;
+    if (!refreshToken) { res.status(401).json({ message: 'Refresh token manquant' }); return; }
+
+    const user = await User.findOne({ refreshToken, refreshTokenExpiry: { $gt: new Date() } });
+    if (!user) { res.status(401).json({ message: 'Refresh token invalide ou expiré' }); return; }
+
+    const { accessToken, refreshToken: newRefreshToken, refreshTokenExpiry } = generateTokenPair(user._id.toString());
+    await User.findByIdAndUpdate(user._id, { refreshToken: newRefreshToken, refreshTokenExpiry });
+
+    res.json({ token: accessToken, refreshToken: newRefreshToken });
+}
+
+export async function logout(req: AuthRequest, res: Response): Promise<void> {
+    await User.findByIdAndUpdate(req.userId, { refreshToken: null, refreshTokenExpiry: null });
+    res.json({ message: 'Déconnecté' });
 }
 
 export async function deleteAccount(req: AuthRequest, res: Response): Promise<void> {
