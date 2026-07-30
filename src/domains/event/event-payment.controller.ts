@@ -6,6 +6,8 @@ import { EventPayment } from './event-payment.model.js';
 import { logger } from '../../infrastructure/config/logger.js';
 
 export async function createPaymentIntent(req: AuthRequest, res: Response): Promise<void> {
+    if (!stripe) { res.status(503).json({ message: 'Paiement indisponible' }); return; }
+
     const event = await Event.findOne({ _id: req.params.id, status: 'approved' });
     if (!event) { res.status(404).json({ message: 'Évènement introuvable' }); return; }
     if (event.isFree || !event.price) { res.status(400).json({ message: 'Cet évènement est gratuit' }); return; }
@@ -41,6 +43,8 @@ export async function confirmPayment(req: AuthRequest, res: Response): Promise<v
 }
 
 export async function stripeWebhook(req: Request, res: Response): Promise<void> {
+    if (!stripe) { res.status(503).send('Paiement indisponible'); return; }
+
     const signature = req.headers['stripe-signature'];
     let event;
     try {
@@ -60,6 +64,8 @@ export async function stripeWebhook(req: Request, res: Response): Promise<void> 
 /// Vérifie le PaymentIntent auprès de Stripe et, s'il a réussi, ajoute l'utilisateur
 /// aux participants de l'évènement. Idempotent — appelable par le webhook et par le client.
 async function settlePayment(paymentIntentId: string): Promise<boolean> {
+    if (!stripe) return false;
+
     const payment = await EventPayment.findOne({ stripePaymentIntentId: paymentIntentId });
     if (!payment) return false;
     if (payment.status === 'succeeded') return true;
