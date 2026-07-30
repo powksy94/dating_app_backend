@@ -1,4 +1,5 @@
 ﻿import { Response } from "express";
+import mongoose from "mongoose";
 import type { AdminRequest } from "../../shared/middleware/admin.middleware.js";
 import { Event } from "./event.model.js";
 import { Profile } from "../profile/profile.model.js";
@@ -37,12 +38,20 @@ export async function listPendingEvents(_req: AdminRequest, res: Response): Prom
 }
 
 export async function approveEvent(req: AdminRequest, res: Response): Promise<void> {
+    if (typeof req.params.id !== 'string' || !mongoose.Types.ObjectId.isValid(req.params.id)) {
+        res.status(400).json({ message: 'Identifiant d\'évènement invalide' });
+        return;
+    }
     const event = await Event.findByIdAndUpdate(req.params.id, { status: 'approved' }, { new: true });
     if (!event) { res.status(404).json({ message: 'Évènement introuvable' }); return; }
     res.json({ message: 'Évènement approuvé', event });
 }
 
 export async function rejectEvent(req: AdminRequest, res: Response): Promise<void> {
+    if (typeof req.params.id !== 'string' || !mongoose.Types.ObjectId.isValid(req.params.id)) {
+        res.status(400).json({ message: 'Identifiant d\'évènement invalide' });
+        return;
+    }
     const event = await Event.findByIdAndUpdate(req.params.id, { status: 'rejected' }, { new: true });
     if (!event) { res.status(404).json({ message: 'Évènement introuvable' }); return; }
     res.json({ message: 'Évènement rejeté', event });
