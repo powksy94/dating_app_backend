@@ -22,6 +22,8 @@ import devRoutes            from './src/domains/dev/dev.routes.js';
 import subscriptionRoutes   from './src/domains/subscription/subscription.routes.js';
 import elegieRoutes         from './src/domains/elegie/elegie.routes.js';
 import eventRoutes          from './src/domains/event/event.routes.js';
+import eventPaymentRoutes   from './src/domains/event/event-payment.routes.js';
+import { stripeWebhook }    from './src/domains/event/event-payment.controller.js';
 import userRoutes           from './src/domains/social/user.routes.js';
 import boostRoutes          from './src/domains/subscription/boost.routes.js';
 import visitRoutes          from './src/domains/visit/visit.routes.js';
@@ -30,6 +32,8 @@ const app = express();
 const PORT = process.env.PORT ?? 3000;
 
 app.use(cors({ origin: process.env.CORS_ORIGIN ?? '*' }));
+// Doit être monté avant express.json() : Stripe a besoin du corps brut pour vérifier la signature.
+app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), stripeWebhook);
 app.use(express.json());
 app.use('/uploads', express.static(join(__dirname, 'uploads')));
 app.use('/admin',   express.static(join(__dirname, 'admin-ui')));
@@ -45,6 +49,7 @@ if (process.env.NODE_ENV !== 'production') app.use('/api/dev', devRoutes);
 app.use('/api/subscription', subscriptionRoutes);
 app.use('/api/elegie',       elegieRoutes);
 app.use('/api/events', eventRoutes);
+app.use('/api/events', eventPaymentRoutes);
 app.use('/api/users',  userRoutes);
 app.use('/api/boost',  boostRoutes);
 app.use('/api/visits', visitRoutes);

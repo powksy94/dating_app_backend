@@ -83,6 +83,10 @@ export async function attendEvent(req: AuthRequest, res: Response): Promise<void
     const event  = await Event.findOne({ _id: req.params.id, status: 'approved' });
 
     if (!event) { res.status(404).json({ message: 'Évènement introuvable' }); return; }
+    if (!event.isFree) {
+        res.status(400).json({ message: 'Cet évènement est payant, passe par le paiement pour t\'inscrire' });
+        return;
+    }
     if (event.attendees.some(a => a.equals(userId))) {
         res.status(409).json({ message: 'Déjà inscrit' }); return;
     }
