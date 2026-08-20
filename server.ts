@@ -20,6 +20,7 @@ import adminRoutes          from './src/domains/admin/admin.routes.js';
 import adminAuthRoutes      from './src/domains/admin/admin-auth.routes.js';
 import devRoutes            from './src/domains/dev/dev.routes.js';
 import subscriptionRoutes   from './src/domains/subscription/subscription.routes.js';
+import revenueCatWebhookRoutes from './src/domains/subscription/revenuecat-webhook.routes.js';
 import elegieRoutes         from './src/domains/elegie/elegie.routes.js';
 import eventRoutes          from './src/domains/event/event.routes.js';
 import eventPaymentRoutes   from './src/domains/event/event-payment.routes.js';
@@ -31,7 +32,9 @@ import visitRoutes          from './src/domains/visit/visit.routes.js';
 const app = express();
 const PORT = process.env.PORT ?? 3000;
 
-app.use(cors({ origin: process.env.CORS_ORIGIN ?? '*' }));
+// L'app mobile appelle l'API en HTTP natif (pas soumis au CORS) ; seul le
+// panel admin web (powksy.com) en a besoin.
+app.use(cors({ origin: process.env.CORS_ORIGIN ?? 'https://powksy.com' }));
 // Doit être monté avant express.json() : Stripe a besoin du corps brut pour vérifier la signature.
 app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), stripeWebhook);
 app.use(express.json());
@@ -47,6 +50,7 @@ app.use('/api/admin',      adminRoutes);
 app.use('/api/admin-auth', adminAuthRoutes);
 if (process.env.NODE_ENV !== 'production') app.use('/api/dev', devRoutes);
 app.use('/api/subscription', subscriptionRoutes);
+app.use('/api/revenuecat/webhook', revenueCatWebhookRoutes);
 app.use('/api/elegie',       elegieRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/events', eventPaymentRoutes);
