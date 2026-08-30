@@ -6,6 +6,7 @@ import { Event } from "./event.model.js";
 import { User } from "../../shared/models/user.model.js";
 import { PLAN_LIMITS, monthStr } from "../subscription/limits.js";
 import cloudinary from "../../infrastructure/config/cloudinary.js";
+import { notifyAdminsNewEvent } from "./notify-admins-new-event.js";
 
 const upload = multer({ storage: multer.memoryStorage() });
 export const uploadCoverMiddleware = upload.single('cover');
@@ -73,6 +74,8 @@ export async function createEvent(req: AuthRequest, res: Response): Promise<void
         price: price ? parseFloat(price) : undefined,
         status: 'pending',
     });
+
+    notifyAdminsNewEvent(event._id.toString(), event.title, event.description).catch(() => {});
 
     res.status(201).json({ message: 'Événement soumis pour modération', eventId: event._id });
 }

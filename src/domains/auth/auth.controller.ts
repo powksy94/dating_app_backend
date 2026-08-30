@@ -65,6 +65,11 @@ export async function login(req: Request, res: Response): Promise<void> {
         return;
     }
 
+    if (user.banned) {
+        res.status(403).json({ message: 'Ce compte a été suspendu', code: 'ACCOUNT_BANNED' });
+        return;
+    }
+
     const { accessToken, refreshToken, refreshTokenExpiry } = generateTokenPair(user._id.toString());
     await User.findByIdAndUpdate(user._id, { refreshToken, refreshTokenExpiry });
 

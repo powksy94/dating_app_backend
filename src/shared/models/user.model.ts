@@ -13,6 +13,8 @@ export interface IUser extends Document {
     monthlyElegies: { count: number; month: string };
     monthlyEvents:  { count: number; month: string };
     boostCredits:   { count: number; lastReset: Date | null };
+    banned:         boolean;
+    bannedReason?:  string;
 }
 
 const UserSchema = new Schema<IUser>({
@@ -39,6 +41,8 @@ const UserSchema = new Schema<IUser>({
         count:     { type: Number, default: 0 },
         lastReset: { type: Date,   default: null },
     },
+    banned:       { type: Boolean, default: false },
+    bannedReason: { type: String },
 }, { timestamps: true });
 
 export const User = mongoose.model<IUser>('User', UserSchema);

@@ -24,6 +24,7 @@ import revenueCatWebhookRoutes from './src/domains/subscription/revenuecat-webho
 import elegieRoutes         from './src/domains/elegie/elegie.routes.js';
 import eventRoutes          from './src/domains/event/event.routes.js';
 import eventPaymentRoutes   from './src/domains/event/event-payment.routes.js';
+import mobileEventReviewRoutes from './src/domains/event/mobile-event-review.routes.js';
 import { stripeWebhook }    from './src/domains/event/event-payment.controller.js';
 import userRoutes           from './src/domains/social/user.routes.js';
 import boostRoutes          from './src/domains/subscription/boost.routes.js';
@@ -54,6 +55,7 @@ app.use('/api/revenuecat/webhook', revenueCatWebhookRoutes);
 app.use('/api/elegie',       elegieRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/events', eventPaymentRoutes);
+app.use('/api/events/mobile-review', mobileEventReviewRoutes);
 app.use('/api/users',  userRoutes);
 app.use('/api/boost',  boostRoutes);
 app.use('/api/visits', visitRoutes);
