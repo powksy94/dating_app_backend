@@ -7,10 +7,11 @@ import { sendPushNotification } from "../../shared/services/notification.service
 import { AuthRequest } from "../../shared/middleware/auth.middleware.js";
 
 interface Session {
-    email:     string;
-    status:    'pending' | 'approved' | 'denied';
-    token?:    string;
-    expiresAt: number;
+    adminId?:      string;
+    linkedUserId?: string;
+    status:        'pending' | 'approved' | 'denied';
+    token?:        string;
+    expiresAt:     number;
 }
 
 const sessions = new Map<string, Session>();
@@ -31,16 +32,17 @@ export async function requestAuth(req: Request, res: Response): Promise<void> {
 
     const sessionId = randomUUID();
 
-    const [admin, user] = await Promise.all([
-        Admin.findOne({ email: email.toLowerCase() }),
-        User.findOne({ email: email.toLowerCase() }).select('fcmToken'),
-    ]);
+    const admin = await Admin.findOne({ email: email.toLowerCase() });
+    const user  = admin?.linkedUserId
+        ? await User.findById(admin.linkedUserId).select('fcmToken')
+        : null;
 
     cleanup();
     sessions.set(sessionId, {
-        email:     email.toLowerCase(),
-        status:    'pending',
-        expiresAt: Date.now() + TTL_MS,
+        adminId:      admin?._id.toString(),
+        linkedUserId: admin?.linkedUserId?.toString(),
+        status:       'pending',
+        expiresAt:    Date.now() + TTL_MS,
     });
 
     // Anti-énumération : réponse identique que l'email soit admin ou non
@@ -90,8 +92,7 @@ export async function respondAuth(req: AuthRequest, res: Response): Promise<void
         return;
     }
 
-    const user = await User.findById(req.userId).select('email');
-    if (!user || user.email !== session.email) {
+    if (!session.linkedUserId || req.userId !== session.linkedUserId) {
         res.status(403).json({ message: 'Non autorisé' });
         return;
     }
@@ -102,11 +103,11 @@ export async function respondAuth(req: AuthRequest, res: Response): Promise<void
         return;
     }
 
-    const admin = await Admin.findOne({ email: session.email });
+    const admin = await Admin.findById(session.adminId);
     if (!admin) { res.status(500).json({ message: 'Admin introuvable' }); return; }
 
     const token = jwt.sign(
-        { userId: admin._id.toString(), email: session.email, role: 'admin' },
+        { userId: admin._id.toString(), email: admin.email, role: 'admin' },
         process.env.JWT_SECRET!,
         { expiresIn: (process.env.JWT_EXPIRES_IN ?? '7d') as any },
     );

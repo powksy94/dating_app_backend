@@ -9,8 +9,9 @@
     "dev": "tsx watch server.ts",
     "build": "tsc",
     "start": "tsx server.ts",
-    "create-admin": "tsx src/scripts/create-admin.ts",
-    "change-admin-password": "tsx src/scripts/change-admin-password.ts",
+    "create-admin": "tsx src/infrastructure/scripts/create-admin.ts",
+    "change-admin-password": "tsx src/infrastructure/scripts/change-admin-password.ts",
+    "link-existing-admins": "tsx src/infrastructure/scripts/link-existing-admins.ts",
     "lint": "eslint . --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "jest"
