@@ -27,6 +27,7 @@ import eventPaymentRoutes   from './src/domains/event/event-payment.routes.js';
 import mobileEventReviewRoutes from './src/domains/event/mobile-event-review.routes.js';
 import { stripeWebhook }    from './src/domains/event/event-payment.controller.js';
 import userRoutes           from './src/domains/social/user.routes.js';
+import mobileReportReviewRoutes from './src/domains/social/mobile-report-review.routes.js';
 import boostRoutes          from './src/domains/subscription/boost.routes.js';
 import visitRoutes          from './src/domains/visit/visit.routes.js';
 
@@ -57,6 +58,7 @@ app.use('/api/events', eventRoutes);
 app.use('/api/events', eventPaymentRoutes);
 app.use('/api/events/mobile-review', mobileEventReviewRoutes);
 app.use('/api/users',  userRoutes);
+app.use('/api/reports/mobile-review', mobileReportReviewRoutes);
 app.use('/api/boost',  boostRoutes);
 app.use('/api/visits', visitRoutes);
 

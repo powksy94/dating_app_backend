@@ -1,11 +1,13 @@
-import { Response } from 'express';
+import { Request, Response } from 'express';
 import mongoose from 'mongoose';
-import { AdminRequest } from '../../shared/middleware/admin.middleware.js';
 import { Report } from '../social/report.model.js';
 import { User } from '../../shared/models/user.model.js';
 import { Profile } from '../profile/profile.model.js';
 
-export async function listReports(_req: AdminRequest, res: Response): Promise<void> {
+// Typed as plain Request (not AdminRequest) so these handlers can be reused
+// both by the web-admin router (admin JWT) and the mobile linked-admin
+// router (regular mobile session) — neither needs the admin-specific fields.
+export async function listReports(_req: Request, res: Response): Promise<void> {
     const reports = await Report.find().sort({ createdAt: -1 }).limit(200).lean();
 
     const userIds = [...new Set(reports.flatMap(r => [r.reporter.toString(), r.reported.toString()]))];
@@ -29,7 +31,7 @@ export async function listReports(_req: AdminRequest, res: Response): Promise<vo
     })));
 }
 
-export async function dismissReport(req: AdminRequest, res: Response): Promise<void> {
+export async function dismissReport(req: Request, res: Response): Promise<void> {
     if (typeof req.params.id !== 'string' || !mongoose.Types.ObjectId.isValid(req.params.id)) {
         res.status(400).json({ message: 'Identifiant de signalement invalide' });
         return;
@@ -38,7 +40,7 @@ export async function dismissReport(req: AdminRequest, res: Response): Promise<v
     res.json({ message: 'Signalement classé sans suite' });
 }
 
-export async function banUser(req: AdminRequest, res: Response): Promise<void> {
+export async function banUser(req: Request, res: Response): Promise<void> {
     if (typeof req.params.userId !== 'string' || !mongoose.Types.ObjectId.isValid(req.params.userId)) {
         res.status(400).json({ message: 'Identifiant utilisateur invalide' });
         return;
@@ -57,7 +59,7 @@ export async function banUser(req: AdminRequest, res: Response): Promise<void> {
     res.json({ message: 'Utilisateur banni' });
 }
 
-export async function unbanUser(req: AdminRequest, res: Response): Promise<void> {
+export async function unbanUser(req: Request, res: Response): Promise<void> {
     if (typeof req.params.userId !== 'string' || !mongoose.Types.ObjectId.isValid(req.params.userId)) {
         res.status(400).json({ message: 'Identifiant utilisateur invalide' });
         return;

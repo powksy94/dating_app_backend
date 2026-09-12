@@ -5,6 +5,8 @@ import { Block } from './block.model.js';
 import { Report } from './report.model.js';
 import { Match } from '../match/match.model.js';
 import { Like } from '../discovery/like.model.js';
+import { Profile } from '../profile/profile.model.js';
+import { notifyAdminsNewReport } from './notify-admins-new-report.js';
 
 export async function blockUser(req: AuthRequest, res: Response): Promise<void> {
     const blockerId = new mongoose.Types.ObjectId(req.userId);
@@ -59,6 +61,9 @@ export async function reportUser(req: AuthRequest, res: Response): Promise<void>
         reported: reportedId,
         reason:   reason.trim(),
     });
+
+    const reportedProfile = await Profile.findOne({ owner: reportedId }).select('username');
+    notifyAdminsNewReport(reportedProfile?.username ?? 'Utilisateur', reason.trim()).catch(() => {});
 
     res.json({ message: 'Signalement envoyé' });
 }
