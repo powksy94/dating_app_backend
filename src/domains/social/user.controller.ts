@@ -7,6 +7,7 @@ import { Match } from '../match/match.model.js';
 import { Like } from '../discovery/like.model.js';
 import { Profile } from '../profile/profile.model.js';
 import { notifyAdminsNewReport } from './notify-admins-new-report.js';
+import { Admin } from '../admin/admin.model.js';
 
 export async function blockUser(req: AuthRequest, res: Response): Promise<void> {
     const blockerId = new mongoose.Types.ObjectId(req.userId);
@@ -66,6 +67,11 @@ export async function reportUser(req: AuthRequest, res: Response): Promise<void>
     notifyAdminsNewReport(reportedProfile?.username ?? 'Utilisateur', reason.trim()).catch(() => {});
 
     res.json({ message: 'Signalement envoyé' });
+}
+
+export async function getIsLinkedAdmin(req: AuthRequest, res: Response): Promise<void> {
+    const admin = await Admin.findOne({ linkedUserId: req.userId });
+    res.json({ isAdmin: !!admin });
 }
 
 export async function getBlockedIds(userId: string): Promise<string[]> {
