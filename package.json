@@ -12,6 +12,9 @@
     "create-admin": "tsx src/infrastructure/scripts/create-admin.ts",
     "change-admin-password": "tsx src/infrastructure/scripts/change-admin-password.ts",
     "link-existing-admins": "tsx src/infrastructure/scripts/link-existing-admins.ts",
+    "migrate-gender-vocabulary": "tsx src/infrastructure/scripts/migrate-gender-vocabulary.ts",
+    "test-list-reports": "tsx src/infrastructure/scripts/test-list-reports.ts",
+    "seed-demo-report": "tsx src/infrastructure/scripts/seed-demo-report.ts",
     "lint": "eslint . --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "jest"

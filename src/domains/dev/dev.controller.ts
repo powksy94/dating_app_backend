@@ -5,6 +5,7 @@ import { Profile } from "../profile/profile.model.js";
 import { Like } from "../discovery/like.model.js";
 import { Match } from "../match/match.model.js";
 import { Elegie } from "../elegie/elegie.model.js";
+import { Report } from "../social/report.model.js";
 import { AuthRequest } from "../../shared/middleware/auth.middleware.js";
 import mongoose from "mongoose";
 
@@ -16,8 +17,8 @@ const MOCK_USERS = [
         age: 24,
         pronouns: 'elle/her',
         aesthetics: ['goth', 'dark academia'],
-        musicGenres: ['darkwave', 'gothic rock'],
-        musicVibes: ['dark', 'melancholic'],
+        musicsGenres: ['darkwave', 'gothic rock'],
+        musicsVibes: ['dark', 'melancholic'],
         musicEras: ['80s goth'],
         soundIntensity: ['intense'],
         discoveryFormats: ['concerts', 'vinyl collector'],
@@ -111,6 +112,25 @@ export async function seedDemoLikes(req: AuthRequest, res: Response): Promise<vo
     }
 
     res.json({ message: 'Likes démo insérés', liked });
+}
+
+export async function seedDemoReport(_req: Request, res: Response): Promise<void> {
+    const [reporter, reported] = await Promise.all([
+        User.findOne({ email: MOCK_USERS[0]!.email }),
+        User.findOne({ email: MOCK_USERS[1]!.email }),
+    ]);
+    if (!reporter || !reported) {
+        res.status(400).json({ message: 'Lance d\'abord /api/dev/seed-mocks pour créer les comptes de démo.' });
+        return;
+    }
+
+    const report = await Report.create({
+        reporter: reporter._id,
+        reported: reported._id,
+        reason:   'Photos inappropriées dans le profil et messages insistants après un refus.',
+    });
+
+    res.json({ message: 'Signalement de démo créé', reportId: report._id });
 }
 
 export async function resetAllData(_req: Request, res: Response): Promise<void> {
