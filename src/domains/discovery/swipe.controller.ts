@@ -1,5 +1,6 @@
 ﻿import { Response } from "express";
 import { Like } from "../discovery/like.model.js";
+import { Pass } from "../discovery/pass.model.js";
 import { Match } from "../match/match.model.js";
 import { Profile } from "../profile/profile.model.js";
 import { Elegie } from "../elegie/elegie.model.js";
@@ -105,6 +106,8 @@ export async function dislikeUser(req: AuthRequest, res: Response): Promise<void
         await elegie.save();
     }
 
+    await Pass.updateOne({ from: userId, to: toId }, {}, { upsert: true });
+
     res.json({ ok: true });
 }
 
@@ -128,8 +131,9 @@ export async function getLikedProfiles(req: AuthRequest, res: Response): Promise
 export async function fecthSwipeProfiles(req: AuthRequest, res: Response): Promise<void> {
     const userId     = new mongoose.Types.ObjectId(req.userId);
     const liked      = await Like.find({ from: userId }).distinct('to');
+    const passed     = await Pass.find({ from: userId }).distinct('to');
     const blockedIds = await getBlockedIds(userId.toString());
-    const excluded   = [...liked, ...blockedIds.map(id => new mongoose.Types.ObjectId(id))];
+    const excluded   = [...liked, ...passed, ...blockedIds.map(id => new mongoose.Types.ObjectId(id))];
 
     const profiles = await Profile.find({ owner: { $nin: [userId, ...excluded] } }).limit(20);
     res.json(profiles);
