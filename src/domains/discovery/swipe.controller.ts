@@ -128,16 +128,6 @@ export async function getLikedProfiles(req: AuthRequest, res: Response): Promise
     res.json(result);
 }
 
-export async function fecthSwipeProfiles(req: AuthRequest, res: Response): Promise<void> {
-    const userId     = new mongoose.Types.ObjectId(req.userId);
-    const liked      = await Like.find({ from: userId }).distinct('to');
-    const passed     = await Pass.find({ from: userId }).distinct('to');
-    const blockedIds = await getBlockedIds(userId.toString());
-    const excluded   = [...liked, ...passed, ...blockedIds.map(id => new mongoose.Types.ObjectId(id))];
-
-    const profiles = await Profile.find({ owner: { $nin: [userId, ...excluded] } }).limit(20);
-    res.json(profiles);
-}
 
 export async function getSwipeStatus(req: AuthRequest, res: Response): Promise<void> {
     const user = await User.findById(req.userId);

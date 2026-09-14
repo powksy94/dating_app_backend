@@ -1,6 +1,7 @@
 ﻿import { Router } from "express";
 import { authMiddleware } from "../../shared/middleware/auth.middleware.js";
-import { likeUser, dislikeUser, fecthSwipeProfiles, getLikedProfiles, getSwipeStatus } from "./swipe.controller.js";
+import { likeUser, dislikeUser, getLikedProfiles, getSwipeStatus } from "./swipe.controller.js";
+import { fecthSwipeProfiles } from "./swipe-feed.controller.js";
 import { rewindLike } from "./rewind.controller.js";
 import { whoLikedMe } from "./who-liked.controller.js";
 import { resetLikes } from "./reset-likes.controller.js";
