@@ -3,6 +3,7 @@ import bcrypt from 'bcrypt';
 import { User } from "../../shared/models/user.model.js";
 import { Profile } from "../profile/profile.model.js";
 import { Like } from "../discovery/like.model.js";
+import { Pass } from "../discovery/pass.model.js";
 import { Match } from "../match/match.model.js";
 import { Elegie } from "../elegie/elegie.model.js";
 import { Report } from "../social/report.model.js";
@@ -134,8 +135,9 @@ export async function seedDemoReport(_req: Request, res: Response): Promise<void
 }
 
 export async function resetAllData(_req: Request, res: Response): Promise<void> {
-    const [likes, matches, elegies] = await Promise.all([
+    const [likes, passes, matches, elegies] = await Promise.all([
         Like.deleteMany({}),
+        Pass.deleteMany({}),
         Match.deleteMany({}),
         Elegie.deleteMany({}),
     ]);
@@ -143,6 +145,7 @@ export async function resetAllData(_req: Request, res: Response): Promise<void> 
     res.json({
         message: 'Reset complet',
         likes:   likes.deletedCount,
+        passes:  passes.deletedCount,
         matches: matches.deletedCount,
         elegies: elegies.deletedCount,
     });

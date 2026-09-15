@@ -8,8 +8,11 @@ import { User } from '../../shared/models/user.model.js';
 import { Profile } from '../../domains/profile/profile.model.js';
 import { sendPushNotification } from '../../shared/services/notification.service.js';
 
-// userId → lastSeen timestamp
-const onlineUsers = new Map<string, Date>();
+// userIds currently connected
+const onlineUsers = new Set<string>();
+// userId → last disconnect timestamp, kept independently of online presence
+// so a disconnected user's lastSeen isn't wiped the moment they go offline.
+const lastSeen = new Map<string, Date>();
 
 let _io: Server | null = null;
 export function getIO(): Server {
@@ -22,7 +25,7 @@ export function isUserOnline(userId: string): boolean {
 }
 
 export function getUserLastSeen(userId: string): Date | null {
-    return onlineUsers.get(userId) ?? null;
+    return lastSeen.get(userId) ?? null;
 }
 
 export function initSocket(httpServer: HttpServer): Server {
@@ -47,14 +50,14 @@ export function initSocket(httpServer: HttpServer): Server {
         const userId: string = socket.data.userId;
 
         // ── Online status ─────────────────────────────────────────────────────
-        onlineUsers.set(userId, new Date());
+        onlineUsers.add(userId);
         socket.broadcast.emit('user_online', userId);
 
         socket.on('disconnect', () => {
             onlineUsers.delete(userId);
-            onlineUsers.set(userId, new Date()); // keep lastSeen
-            socket.broadcast.emit('user_offline', { userId, lastSeen: new Date() });
-            onlineUsers.delete(userId);
+            const disconnectedAt = new Date();
+            lastSeen.set(userId, disconnectedAt);
+            socket.broadcast.emit('user_offline', { userId, lastSeen: disconnectedAt });
         });
 
         // ── Rooms ─────────────────────────────────────────────────────────────
