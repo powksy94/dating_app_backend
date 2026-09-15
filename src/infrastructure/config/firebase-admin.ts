@@ -10,7 +10,7 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT) {
 } else {
     // Fallback local (développement uniquement)
     const __dirname = dirname(fileURLToPath(import.meta.url));
-    const keyPath   = join(__dirname, '../../nocturne-4582e-firebase-adminsdk-fbsvc-9d72dd6fa6.json');
+    const keyPath   = join(__dirname, '../../../nocturne-4582e-firebase-adminsdk-fbsvc-9d72dd6fa6.json');
     serviceAccount  = JSON.parse(readFileSync(keyPath, 'utf-8'));
 }
 
