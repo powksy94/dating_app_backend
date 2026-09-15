@@ -7,8 +7,8 @@ import mongoose from 'mongoose';
 export async function resetLikes(req: AuthRequest, res: Response): Promise<void> {
     const userId = new mongoose.Types.ObjectId(req.userId);
 
-    // Garde les likes vers des profils déjà matchés, pour qu'ils ne réapparaissent
-    // pas dans le feed de découverte après la réinitialisation.
+    // Keep the likes toward profiles already matched, so they don't reappear
+    // in the discovery feed after the reset.
     const matches    = await Match.find({ users: userId });
     const matchedIds = matches.flatMap(m => m.users.filter(u => !u.equals(userId)));
 

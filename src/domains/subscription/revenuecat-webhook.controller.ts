@@ -8,15 +8,15 @@ type Period = 'week' | 'month' | 'year';
 
 const VALID_PLANS: Plan[] = ['nocturne', 'abyssal'];
 
-// Événements qui confirment un accès payant actif (achat, renouvellement,
-// annulation de résiliation, changement de palier, transfert de compte).
+// Events that confirm an active paid access (purchase, renewal,
+// cancellation reversal, tier change, account transfer).
 const ACTIVE_EVENTS = new Set([
     'INITIAL_PURCHASE', 'RENEWAL', 'UNCANCELLATION', 'PRODUCT_CHANGE', 'TRANSFER',
 ]);
 
-// Seule EXPIRATION signifie que l'accès est réellement terminé. CANCELLATION
-// veut juste dire que le renouvellement automatique est coupé — l'accès
-// continue jusqu'à la date d'expiration, qui déclenchera EXPIRATION plus tard.
+// Only EXPIRATION means access is truly over. CANCELLATION just means
+// auto-renewal was turned off, access continues until the expiration date,
+// which will trigger EXPIRATION later.
 const EXPIRATION_EVENTS = new Set(['EXPIRATION']);
 
 function periodFromProductId(productId: string | undefined): Period {
@@ -38,7 +38,7 @@ export async function revenueCatWebhook(req: Request, res: Response): Promise<vo
     } | undefined;
 
     if (!event?.app_user_id || !mongoose.Types.ObjectId.isValid(event.app_user_id)) {
-        // Événements de test ou utilisateurs anonymes (jamais identifiés côté app) — rien à synchroniser.
+        // Test events or anonymous users (never identified on the app side): nothing to sync.
         res.status(200).json({ received: true });
         return;
     }

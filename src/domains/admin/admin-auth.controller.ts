@@ -45,7 +45,7 @@ export async function requestAuth(req: Request, res: Response): Promise<void> {
         expiresAt:    Date.now() + TTL_MS,
     });
 
-    // Anti-énumération : réponse identique que l'email soit admin ou non
+    // Anti-enumeration: identical response whether the email is an admin or not
     if (admin && user?.fcmToken) {
         sendPushNotification(
             user.fcmToken,

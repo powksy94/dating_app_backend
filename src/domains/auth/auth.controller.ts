@@ -17,7 +17,7 @@ import type { AuthRequest } from "../../shared/middleware/auth.middleware.js";
 function generateTokenPair(userId: string): { accessToken: string; refreshToken: string; refreshTokenExpiry: Date } {
     const accessToken       = jwt.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: '1h' });
     const refreshToken      = crypto.randomBytes(64).toString('hex');
-    const refreshTokenExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 jours
+    const refreshTokenExpiry = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000); // 30 days
     return { accessToken, refreshToken, refreshTokenExpiry };
 }
 
@@ -161,7 +161,7 @@ export async function logout(req: AuthRequest, res: Response): Promise<void> {
 export async function deleteAccount(req: AuthRequest, res: Response): Promise<void> {
     const userId = new mongoose.Types.ObjectId(req.userId);
 
-    // Récupère les photos Cloudinary avant suppression
+    // Fetch the Cloudinary photos before deletion
     const profile = await Profile.findOne({ owner: userId });
     if (profile?.photos?.length) {
         for (const url of profile.photos) {
@@ -174,7 +174,7 @@ export async function deleteAccount(req: AuthRequest, res: Response): Promise<vo
         }
     }
 
-    // Récupère les matchIds pour supprimer les messages
+    // Fetch the matchIds to delete the messages
     const matches  = await Match.find({ users: userId });
     const matchIds = matches.map(m => m._id);
 

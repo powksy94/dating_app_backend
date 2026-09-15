@@ -25,7 +25,7 @@ export async function blockUser(req: AuthRequest, res: Response): Promise<void> 
         { upsert: true }
     );
 
-    // Supprime le match existant si présent
+    // Delete the existing match if present
     await Match.deleteOne({ users: { $all: [blockerId, blockedId] } });
     await Like.deleteMany({
         $or: [

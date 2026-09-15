@@ -34,10 +34,10 @@ import visitRoutes          from './src/domains/visit/visit.routes.js';
 const app = express();
 const PORT = process.env.PORT ?? 3000;
 
-// L'app mobile appelle l'API en HTTP natif (pas soumis au CORS) ; seul le
-// panel admin web (powksy.com) en a besoin.
+// The mobile app calls the API over native HTTP (not subject to CORS); only the
+// web admin panel (powksy.com) needs it.
 app.use(cors({ origin: process.env.CORS_ORIGIN ?? 'https://powksy.com' }));
-// Doit être monté avant express.json() : Stripe a besoin du corps brut pour vérifier la signature.
+// Must be mounted before express.json(): Stripe needs the raw body to verify the signature.
 app.post('/api/stripe/webhook', express.raw({ type: 'application/json' }), stripeWebhook);
 app.use(express.json());
 app.use('/uploads', express.static(join(__dirname, 'uploads')));

@@ -52,7 +52,7 @@ export function initSocket(httpServer: HttpServer): Server {
 
         socket.on('disconnect', () => {
             onlineUsers.delete(userId);
-            onlineUsers.set(userId, new Date()); // garde lastSeen
+            onlineUsers.set(userId, new Date()); // keep lastSeen
             socket.broadcast.emit('user_offline', { userId, lastSeen: new Date() });
             onlineUsers.delete(userId);
         });
@@ -60,7 +60,7 @@ export function initSocket(httpServer: HttpServer): Server {
         // ── Rooms ─────────────────────────────────────────────────────────────
         socket.on('join_room', (matchId: string) => {
             socket.join(matchId);
-            // Envoie le statut en ligne de l'autre à qui rejoint
+            // Send the other person's online status to whoever joins
             socket.emit('online_status', {
                 userId,
                 online: true,
@@ -108,7 +108,7 @@ export function initSocket(httpServer: HttpServer): Server {
                 createdAt: (message as any).createdAt,
             });
 
-            // Push notification si le destinataire n'est pas dans la salle de conversation
+            // Push notification if the recipient is not in the conversation room
             const otherUserId  = match.users.find(u => u.toString() !== userId)?.toString();
             const roomMembers  = io.sockets.adapter.rooms.get(matchId) ?? new Set();
             const otherSockets = [...io.sockets.sockets.values()]

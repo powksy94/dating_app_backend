@@ -19,14 +19,14 @@ export async function fecthSwipeProfiles(req: AuthRequest, res: Response): Promi
         { $match: { owner: { $nin: [userId, ...excluded] } } },
     ];
 
-    // Genre recherché : ne filtre que si l'utilisateur a exprimé une préférence.
+    // Gender sought: only filters if the user has expressed a preference.
     if (me?.genderPreferences?.length) {
         pipeline.push({ $match: { gender: { $in: me.genderPreferences } } });
     }
 
-    // Distance : les profils sans localisation ne sont jamais exclus (donnée
-    // absente, pas hors zone) ; $geoWithin (contrairement à $near) fonctionne
-    // dans un $or, ce qui permet cette tolérance.
+    // Distance: profiles without a location are never excluded (missing data,
+    // not out of range); $geoWithin (unlike $near) works inside an $or, which
+    // allows this leniency.
     if (me?.location?.coordinates && me.maxDistance) {
         const [lng, lat] = me.location.coordinates;
         pipeline.push({
@@ -39,9 +39,9 @@ export async function fecthSwipeProfiles(req: AuthRequest, res: Response): Promi
         });
     }
 
-    // Âge : calculé depuis birthDate (comme côté app), pas depuis le champ
-    // `age` historique. Un profil sans birthDate est traité comme "âge
-    // inconnu" et n'est donc pas exclu par ce filtre.
+    // Age: computed from birthDate (like the app does), not from the legacy
+    // `age` field. A profile without a birthDate is treated as "unknown age"
+    // and is therefore not excluded by this filter.
     const ageMin = me?.ageMin ?? 18;
     const ageMax = me?.ageMax ?? 99;
     pipeline.push(

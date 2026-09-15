@@ -64,7 +64,7 @@ export async function useBoost(req: AuthRequest, res: Response): Promise<void> {
     user.boostCredits.count -= 1;
     await user.save();
 
-    // Marquer le profil comme boosté pendant 30 minutes
+    // Mark the profile as boosted for 30 minutes
     const boostedUntil = new Date(Date.now() + 30 * 60 * 1000);
     await Profile.findOneAndUpdate({ owner: user._id }, { boostedUntil });
 

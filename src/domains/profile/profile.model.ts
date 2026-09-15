@@ -57,7 +57,7 @@ const ProfileSchema = new Schema<IProfile>({
     },
 }, { timestamps: true });
 
-// Index géospatial pour la recherche par proximité
+// Geospatial index for proximity search
 ProfileSchema.index({ location: '2dsphere' }, { sparse: true });
 
 export const Profile = mongoose.model<IProfile>('Profile', ProfileSchema);

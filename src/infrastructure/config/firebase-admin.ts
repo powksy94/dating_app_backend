@@ -8,7 +8,7 @@ let serviceAccount: object;
 if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT);
 } else {
-    // Fallback local (développement uniquement)
+    // Local fallback (development only)
     const __dirname = dirname(fileURLToPath(import.meta.url));
     const keyPath   = join(__dirname, '../../../nocturne-4582e-firebase-adminsdk-fbsvc-9d72dd6fa6.json');
     serviceAccount  = JSON.parse(readFileSync(keyPath, 'utf-8'));

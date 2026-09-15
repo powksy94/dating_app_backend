@@ -66,7 +66,7 @@ export async function sendMessage(req: AuthRequest, res: Response): Promise<void
             createdAt: (message as any).createdAt,
         });
 
-        // Push notification si destinataire pas dans la room
+        // Push notification if the recipient is not in the room
         const match         = await Match.findById(matchId);
         const otherUserId   = match?.users.find(u => u.toString() !== userId)?.toString();
         const roomMembers   = io.sockets.adapter.rooms.get(matchId) ?? new Set();

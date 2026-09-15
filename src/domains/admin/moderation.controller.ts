@@ -50,8 +50,8 @@ export async function banUser(req: Request, res: Response): Promise<void> {
     const user = await User.findByIdAndUpdate(req.params.userId, {
         banned:       true,
         bannedReason: reason?.trim() || 'Non spécifiée',
-        // Force une reconnexion : la session en cours reste valide au plus
-        // 1h (durée de vie du token d'accès), le refresh échouera ensuite.
+        // Forces a re-login: the current session stays valid for at most
+        // 1h (access token lifetime), the refresh will then fail.
         refreshToken: null,
     }, { new: true });
 

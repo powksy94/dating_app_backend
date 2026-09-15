@@ -61,8 +61,8 @@ export async function stripeWebhook(req: Request, res: Response): Promise<void> 
     res.json({ received: true });
 }
 
-/// Vérifie le PaymentIntent auprès de Stripe et, s'il a réussi, ajoute l'utilisateur
-/// aux participants de l'évènement. Idempotent — appelable par le webhook et par le client.
+/// Verifies the PaymentIntent with Stripe and, if it succeeded, adds the user
+/// to the event's attendees. Idempotent, callable by both the webhook and the client.
 async function settlePayment(paymentIntentId: string): Promise<boolean> {
     if (!stripe) return false;
 

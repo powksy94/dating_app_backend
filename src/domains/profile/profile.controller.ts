@@ -68,7 +68,7 @@ export async function getProfileByUserId(req: AuthRequest, res: Response): Promi
     const profile = await Profile.findOne({ owner: req.params.userId });
     if (!profile) { res.status(404).json({ message: 'Profile introuvable' }); return; }
 
-    // Enregistrer la visite en arrière-plan (sans bloquer la réponse)
+    // Record the visit in the background (without blocking the response)
     if (req.userId !== req.params.userId) {
         import('../visit/visit.controller.js')
             .then(({ recordVisit }) => recordVisit(req.userId!, String(req.params.userId)))
