@@ -31,21 +31,23 @@ configured with.
 routes (mock/seed/reset endpoints), so those are never reachable on the
 production deployment regardless of database.
 
-## Forced app update
+## Retiring old app builds
+
+Newer app builds ask Google Play at launch whether an update is available
+and show a blocking dialog pointing to the store, so future releases need no
+server configuration. Builds that predate this check cannot show that
+dialog, so the backend can cut them off instead.
 
 Set `MIN_APP_BUILD` (a build number, the part after `+` in the Flutter
-`pubspec.yaml` version) to require a minimum mobile app version. Requests
-from older builds get an HTTP 426 `UPDATE_REQUIRED` response, and the app
-shows a blocking "update required" screen. The app announces its build in
-its `User-Agent` (`Nocturne/<version>+<build>`); builds that predate this
-report a plain `Dart/...` agent and are treated as outdated. Requests that
-are not from the mobile app (web admin panel, webhooks, curl) are never
-blocked by this check.
+`pubspec.yaml` version) to refuse older builds with an HTTP 426
+`UPDATE_REQUIRED` response. The app announces its build in its `User-Agent`
+(`Nocturne/<version>+<build>`); builds that predate this report a plain
+`Dart/...` agent and are treated as outdated. Requests that are not from the
+mobile app (web admin panel, webhooks, curl) are never blocked by this check.
 
-The check is disabled while `MIN_APP_BUILD` is unset. When releasing, set it
-only once the new build is available to users, otherwise you lock out
-everyone who cannot update yet. `GET /api/app/version` returns the current
-minimum and stays reachable for outdated apps.
+The check is disabled while `MIN_APP_BUILD` is unset. Set it once, to the
+first build that includes the Play update dialog, and only after that build
+is available to users, otherwise you lock out everyone who cannot update yet.
 
 ## Available scripts
 

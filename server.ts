@@ -30,7 +30,6 @@ import userRoutes           from './src/domains/social/user.routes.js';
 import mobileReportReviewRoutes from './src/domains/social/mobile-report-review.routes.js';
 import boostRoutes          from './src/domains/subscription/boost.routes.js';
 import visitRoutes          from './src/domains/visit/visit.routes.js';
-import appVersionRoutes     from './src/domains/app/app-version.routes.js';
 import { appVersionMiddleware } from './src/shared/middleware/app-version.middleware.js';
 
 const app = express();
@@ -45,7 +44,6 @@ app.use(express.json());
 app.use('/uploads', express.static(join(__dirname, 'uploads')));
 app.use('/admin',   express.static(join(__dirname, 'admin-ui')));
 
-app.use('/api/app', appVersionRoutes);
 app.use('/api', appVersionMiddleware);
 
 app.use('/api/auth', authRoutes);
