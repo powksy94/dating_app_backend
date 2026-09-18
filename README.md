@@ -31,6 +31,22 @@ configured with.
 routes (mock/seed/reset endpoints), so those are never reachable on the
 production deployment regardless of database.
 
+## Forced app update
+
+Set `MIN_APP_BUILD` (a build number, the part after `+` in the Flutter
+`pubspec.yaml` version) to require a minimum mobile app version. Requests
+from older builds get an HTTP 426 `UPDATE_REQUIRED` response, and the app
+shows a blocking "update required" screen. The app announces its build in
+its `User-Agent` (`Nocturne/<version>+<build>`); builds that predate this
+report a plain `Dart/...` agent and are treated as outdated. Requests that
+are not from the mobile app (web admin panel, webhooks, curl) are never
+blocked by this check.
+
+The check is disabled while `MIN_APP_BUILD` is unset. When releasing, set it
+only once the new build is available to users, otherwise you lock out
+everyone who cannot update yet. `GET /api/app/version` returns the current
+minimum and stays reachable for outdated apps.
+
 ## Available scripts
 
 - `npm run dev` — run locally with hot-reload.
