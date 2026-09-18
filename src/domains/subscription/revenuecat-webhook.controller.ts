@@ -19,9 +19,11 @@ const ACTIVE_EVENTS = new Set([
 // which will trigger EXPIRATION later.
 const EXPIRATION_EVENTS = new Set(['EXPIRATION']);
 
+// Google Play products reach us as "<subscriptionId>:<basePlanId>" (e.g.
+// "nocturne_weekly:weekly"), so the period can't be read from a fixed suffix.
 function periodFromProductId(productId: string | undefined): Period {
-    if (productId?.endsWith('_weekly'))  return 'week';
-    if (productId?.endsWith('_yearly'))  return 'year';
+    if (productId?.includes('weekly'))  return 'week';
+    if (productId?.includes('yearly'))  return 'year';
     return 'month';
 }
 
