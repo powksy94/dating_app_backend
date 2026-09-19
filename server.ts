@@ -31,9 +31,14 @@ import mobileReportReviewRoutes from './src/domains/social/mobile-report-review.
 import boostRoutes          from './src/domains/subscription/boost.routes.js';
 import visitRoutes          from './src/domains/visit/visit.routes.js';
 import { appVersionMiddleware } from './src/shared/middleware/app-version.middleware.js';
+import { apiLimiter } from './src/shared/middleware/rate-limit.middleware.js';
 
 const app = express();
 const PORT = process.env.PORT ?? 3000;
+
+// Railway forwards requests through one proxy: without this, every client would
+// share the proxy's IP and the rate limit would count them all together.
+app.set('trust proxy', 1);
 
 // The mobile app calls the API over native HTTP (not subject to CORS); only the
 // web admin panel (powksy.com) needs it.
@@ -44,6 +49,7 @@ app.use(express.json());
 app.use('/uploads', express.static(join(__dirname, 'uploads')));
 app.use('/admin',   express.static(join(__dirname, 'admin-ui')));
 
+app.use('/api', apiLimiter);
 app.use('/api', appVersionMiddleware);
 
 app.use('/api/auth', authRoutes);
