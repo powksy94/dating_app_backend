@@ -1,4 +1,5 @@
 import { containsBannedWord } from '../../shared/data/banned-words.js';
+import { containsProfanity, THEME_WORDS } from '../../shared/data/profanity.js';
 
 export const MAX_FAVORITE_BANDS = 20;
 // The app caps the input at 60 characters; the server is a little more lenient
@@ -52,7 +53,9 @@ export function checkBandName(raw: unknown): { verdict: BandNameVerdict; name?: 
     const name = cleanBandName(raw);
     if (!name) return { verdict: 'invalid' };
     if (LINK_PATTERN.test(name)) return { verdict: 'link' };
-    if (containsBannedWord(name)) return { verdict: 'banned' };
+    // Same rule as the app: the multilingual lists, with the dark-theme words
+    // (Sex Pistols, Killing Joke...) allowed in a band name.
+    if (containsBannedWord(name) || containsProfanity(name, THEME_WORDS)) return { verdict: 'banned' };
     return { verdict: 'ok', name };
 }
 

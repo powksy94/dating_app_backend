@@ -10,7 +10,9 @@ import { Profile } from '../profile/profile.model.js';
 export async function listReports(_req: Request, res: Response): Promise<void> {
     const reports = await Report.find().sort({ createdAt: -1 }).limit(200).lean();
 
-    const userIds = [...new Set(reports.flatMap(r => [r.reporter.toString(), r.reported.toString()]))];
+    // An automatic report has no reporter, only the reported user.
+    const userIds = [...new Set(reports.flatMap(r =>
+        [r.reporter?.toString(), r.reported.toString()].filter((id): id is string => Boolean(id))))];
     const [profiles, users] = await Promise.all([
         Profile.find({ owner: { $in: userIds } }).select('owner username').lean(),
         User.find({ _id: { $in: userIds } }).select('banned').lean(),
@@ -22,7 +24,10 @@ export async function listReports(_req: Request, res: Response): Promise<void> {
         id:       r._id,
         reason:   r.reason,
         createdAt: (r as any).createdAt,
-        reporter: { id: r.reporter, username: usernameOf.get(r.reporter.toString()) ?? null },
+        // The review screens show this name, so an automatic report reads as such.
+        reporter: r.reporter
+            ? { id: r.reporter, username: usernameOf.get(r.reporter.toString()) ?? null }
+            : { id: null, username: 'Nocturne (automatique)' },
         reported: {
             id:       r.reported,
             username: usernameOf.get(r.reported.toString()) ?? null,

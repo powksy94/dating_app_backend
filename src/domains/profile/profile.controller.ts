@@ -5,6 +5,7 @@ import { AuthRequest } from "../../shared/middleware/auth.middleware.js";
 import multer from "multer";
 import cloudinary from "../../infrastructure/config/cloudinary.js";
 import { sanitizeProfileUpdate } from "./profile-validation.js";
+import { reviewBio } from "../social/auto-report.js";
 import { logger } from "../../infrastructure/config/logger.js";
 import { Readable } from 'stream';
 
@@ -37,6 +38,14 @@ export async function UptapeMyProfile(req: AuthRequest, res: Response): Promise<
         { $set: updates },
         { new: true }
     );
+
+    // A bio with an insult is kept but sent for review (see auto-report.ts). Done
+    // in the background so it does not slow the response down.
+    if (typeof updates.bio === 'string') {
+        reviewBio(req.userId!, updates.bio)
+            .catch((err) => logger.warn(`Bio review failed for user ${req.userId}`, { err }));
+    }
+
     res.json(profile);
 }
 
