@@ -4,6 +4,8 @@ import { User } from "../../shared/models/user.model.js";
 import { AuthRequest } from "../../shared/middleware/auth.middleware.js";
 import multer from "multer";
 import cloudinary from "../../infrastructure/config/cloudinary.js";
+import { sanitizeProfileUpdate } from "./profile-validation.js";
+import { logger } from "../../infrastructure/config/logger.js";
 import { Readable } from 'stream';
 
 export async function getMyProfile(req: AuthRequest, res: Response): Promise<void> {
@@ -13,17 +15,21 @@ export async function getMyProfile(req: AuthRequest, res: Response): Promise<voi
 }
 
 export async function UptapeMyProfile(req: AuthRequest, res: Response): Promise<void> {
-    const allowed = [
-        'username', 'bio', 'age', 'avatarUrl', 'musicsGenres',
-        'musicsVibes', 'aesthetics', 'soundIntensity', 'musicEras',
-        'discoveryFormats', 'favoriteBands', 'upcomingEvents', 'socialLinks', 'location',
-        'birthDate', 'gender', 'pronouns', 'genderPreferences', 'ageMin', 'ageMax',
-        'maxDistance', 'profileComplete',
-    ];
+    // Every value is validated (vocabulary, ranges, adult age, favorite bands...),
+    // see profile-validation.ts. A value that fails is ignored and the rest is saved.
+    const { updates, rejected } = sanitizeProfileUpdate(req.body);
 
-    const updates: Record<string, unknown> = {};
-    for (const key of allowed) {
-        if (req.body[key] !== undefined) updates[key] = req.body[key];
+    if (rejected.includes('body')) {
+        res.status(400).json({ message: 'Requête invalide' });
+        return;
+    }
+    // The app is for adults only: an invalid or underage birth date refuses the whole update.
+    if (rejected.includes('birthDate')) {
+        res.status(400).json({ message: 'Date de naissance invalide (18 ans minimum)' });
+        return;
+    }
+    if (rejected.length) {
+        logger.warn(`Profile update: fields refused for user ${req.userId}: ${rejected.join(', ')}`);
     }
 
     const profile = await Profile.findOneAndUpdate(
