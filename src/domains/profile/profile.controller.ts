@@ -81,6 +81,10 @@ export async function getProfileByUserId(req: AuthRequest, res: Response): Promi
 export async function saveFcmToken(req: AuthRequest, res: Response): Promise<void> {
     const { token } = req.body as { token: string };
     if (!token) { res.status(400).json({ message: 'Token requis' }); return; }
+    // A device token belongs to one account at a time: if another account was
+    // signed in on this device (e.g. logout that never reached the server),
+    // release the token from it so it stops receiving the new user's pushes.
+    await User.updateMany({ _id: { $ne: req.userId }, fcmToken: token }, { fcmToken: null });
     await User.findByIdAndUpdate(req.userId, { fcmToken: token });
     res.json({ message: 'Token FCM enregistré' });
 }

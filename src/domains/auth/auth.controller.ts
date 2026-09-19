@@ -154,7 +154,10 @@ export async function refresh(req: Request, res: Response): Promise<void> {
 }
 
 export async function logout(req: AuthRequest, res: Response): Promise<void> {
-    await User.findByIdAndUpdate(req.userId, { refreshToken: null, refreshTokenExpiry: null });
+    // Also drop the push token so the device stops receiving this account's notifications.
+    await User.findByIdAndUpdate(req.userId, {
+        refreshToken: null, refreshTokenExpiry: null, fcmToken: null,
+    });
     res.json({ message: 'Déconnecté' });
 }
 
