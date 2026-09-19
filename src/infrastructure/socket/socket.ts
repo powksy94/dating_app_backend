@@ -7,6 +7,7 @@ import { Match } from '../../domains/match/match.model.js';
 import { User } from '../../shared/models/user.model.js';
 import { Profile } from '../../domains/profile/profile.model.js';
 import { sendPushNotification } from '../../shared/services/notification.service.js';
+import { isContactInfoRefused } from '../../domains/chat/contact-guard.js';
 
 // userIds currently connected
 const onlineUsers = new Set<string>();
@@ -90,6 +91,13 @@ export function initSocket(httpServer: HttpServer): Server {
 
             const match = await Match.findOne({ _id: matchId, users: userId });
             if (!match) return;
+
+            // No link or phone number until the other person has replied. The
+            // message is not saved: the sender is told so the app can explain why.
+            if (await isContactInfoRefused(matchId, userId, text)) {
+                socket.emit('message_blocked', { matchId, reason: 'contact_info' });
+                return;
+            }
 
             const message = await Message.create({
                 matchId,

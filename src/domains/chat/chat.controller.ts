@@ -6,6 +6,7 @@ import { Profile } from "../profile/profile.model.js";
 import { AuthRequest } from "../../shared/middleware/auth.middleware.js";
 import { getIO } from "../../infrastructure/socket/socket.js";
 import { sendPushNotification } from "../../shared/services/notification.service.js";
+import { isContactInfoRefused } from "./contact-guard.js";
 import mongoose from "mongoose";
 import multer from "multer";
 import { Readable } from "stream";
@@ -48,6 +49,15 @@ export async function sendMessage(req: AuthRequest, res: Response): Promise<void
 
     const matchId = req.params.matchId as string;
     const userId  = req.userId!;
+
+    // No link or phone number until the other person has replied (same rule as the socket).
+    if (await isContactInfoRefused(matchId, userId, text)) {
+        res.status(422).json({
+            code:    'CONTACT_INFO_BLOCKED',
+            message: 'Les liens et numéros de téléphone ne sont pas autorisés tant que l\'autre personne n\'a pas répondu.',
+        });
+        return;
+    }
 
     const message = await Message.create({
         matchId,
