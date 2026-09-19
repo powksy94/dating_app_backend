@@ -10,7 +10,7 @@ import { Match } from "../match/match.model.js";
 import { Message } from "../chat/message.model.js";
 import { Elegie } from "../elegie/elegie.model.js";
 import { Event } from "../event/event.model.js";
-import { containsBannedWord } from "../../shared/data/banned-words.js";
+import { usernameProblem } from "./username-validation.js";
 import cloudinary from "../../infrastructure/config/cloudinary.js";
 import type { AuthRequest } from "../../shared/middleware/auth.middleware.js";
 
@@ -25,6 +25,14 @@ export async function register(req: Request, res: Response): Promise<void> {
     const { email, password, username } = req.body;
     if (!email || !password || !username) {
         res.status(400).json({ message: 'email, password et username requis' });
+        return;
+    }
+
+    // The pseudo rules (format, insults, uniqueness) apply here too, not only in
+    // check-username: a client can skip that call.
+    const problem = await usernameProblem(username);
+    if (problem) {
+        res.status(problem.taken ? 409 : 400).json({ message: problem.reason });
         return;
     }
 
@@ -114,30 +122,16 @@ export async function changePassword(req: AuthRequest, res: Response): Promise<v
 }
 
 export async function checkUsername(req: Request, res: Response): Promise<void> {
-    const { username } = req.query as { username: string };
-
-    if (!username || username.trim().length < 3) {
-        res.status(400).json({ available: false, reason: 'Trop court (3 caractères minimum)' });
+    const problem = await usernameProblem(req.query.username);
+    if (problem?.taken) {
+        res.json({ available: false });
         return;
     }
-
-    if (username.length > 20) {
-        res.status(400).json({ available: false, reason: 'Trop long (20 caractères maximum)' });
+    if (problem) {
+        res.status(400).json({ available: false, reason: problem.reason });
         return;
     }
-
-    if (!/^[a-zA-Z0-9_.\-]+$/.test(username)) {
-        res.status(400).json({ available: false, reason: 'Caractères invalides' });
-        return;
-    }
-
-    if (containsBannedWord(username)) {
-        res.status(400).json({ available: false, reason: 'Pseudo non autorisé' });
-        return;
-    }
-
-    const exists = await Profile.findOne({ username: username.trim() });
-    res.json({ available: !exists });
+    res.json({ available: true });
 }
 
 export async function refresh(req: Request, res: Response): Promise<void> {
