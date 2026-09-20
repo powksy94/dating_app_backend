@@ -31,3 +31,22 @@ export async function reviewBio(userId: string, bio: string): Promise<void> {
     const profile = await Profile.findOne({ owner: userId }).select('username');
     notifyAdminsNewReport(profile?.username ?? 'Utilisateur', reason).catch(() => {});
 }
+
+/**
+ * Raises or refreshes the automatic report about a blocked chat message (a link
+ * or a phone number sent before the other person replied, see
+ * chat/contact-guard.ts). Unlike the bio, there is no "clean" state to detect,
+ * so this never clears the report: an admin dismisses it once reviewed. One
+ * open report per user, refreshed with the latest attempt.
+ */
+export async function reportBlockedContactInfo(userId: string, text: string): Promise<void> {
+    const filter = { reported: userId, source: 'auto' as const, topic: 'chat_contact_info' };
+    const reason = `Lien ou numéro envoyé avant que l'autre personne ait répondu : « ${text} »`;
+
+    const refreshed = await Report.findOneAndUpdate(filter, { $set: { reason } });
+    if (refreshed) return;
+
+    await Report.create({ ...filter, reason });
+    const profile = await Profile.findOne({ owner: userId }).select('username');
+    notifyAdminsNewReport(profile?.username ?? 'Utilisateur', reason).catch(() => {});
+}
