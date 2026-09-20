@@ -25,6 +25,9 @@ export interface IProfile extends Document {
     ageMax?:            number;
     maxDistance?:       number;
     profileComplete?:   boolean;
+    /** Duplicated from User at registration so the discovery feed can filter on
+     * it without a lookup. Never set by the client. */
+    isTestAccount:      boolean;
 }
 
 const ProfileSchema = new Schema<IProfile>({
@@ -51,6 +54,7 @@ const ProfileSchema = new Schema<IProfile>({
     ageMax:             { type: Number, default: 99 },
     maxDistance:        { type: Number, default: 50 },
     profileComplete:    { type: Boolean, default: false },
+    isTestAccount:      { type: Boolean, default: false },
     location: {
         type:           { type: String, enum: ['Point']},
         coordinates:    { type: [Number] },

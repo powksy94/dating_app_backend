@@ -15,8 +15,13 @@ export async function fecthSwipeProfiles(req: AuthRequest, res: Response): Promi
 
     const me = await Profile.findOne({ owner: userId });
 
+    // Test accounts (internal/closed testing) only ever see other test accounts,
+    // and real users never see a test account.
     const pipeline: mongoose.PipelineStage[] = [
-        { $match: { owner: { $nin: [userId, ...excluded] } } },
+        { $match: {
+            owner: { $nin: [userId, ...excluded] },
+            isTestAccount: Boolean(me?.isTestAccount),
+        } },
     ];
 
     // Gender sought: only filters if the user has expressed a preference.

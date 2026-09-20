@@ -15,6 +15,10 @@ export interface IUser extends Document {
     boostCredits:   { count: number; lastReset: Date | null };
     banned:         boolean;
     bannedReason?:  string;
+    /** Set once at registration from the build that created the account (see
+     * auth.controller.ts). Keeps test accounts (internal/closed testing) out of
+     * the real discovery pool, and vice versa. */
+    isTestAccount:  boolean;
 }
 
 const UserSchema = new Schema<IUser>({
@@ -43,6 +47,7 @@ const UserSchema = new Schema<IUser>({
     },
     banned:       { type: Boolean, default: false },
     bannedReason: { type: String },
+    isTestAccount: { type: Boolean, default: false },
 }, { timestamps: true });
 
 export const User = mongoose.model<IUser>('User', UserSchema);

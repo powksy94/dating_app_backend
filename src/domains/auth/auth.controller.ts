@@ -22,7 +22,10 @@ function generateTokenPair(userId: string): { accessToken: string; refreshToken:
 }
 
 export async function register(req: Request, res: Response): Promise<void> {
-    const { email, password, username } = req.body;
+    const { email, password, username, testBuild } = req.body;
+    // Set once, from the build that created the account: never trust it again
+    // after this (see profile-validation.ts, which the client can't rewrite).
+    const isTestAccount = testBuild === true;
     if (!email || !password || !username) {
         res.status(400).json({ message: 'email, password et username requis' });
         return;
@@ -43,10 +46,10 @@ export async function register(req: Request, res: Response): Promise<void> {
     }
 
     const passwordHash = await bcrypt.hash(password, 12);
-    const user = await User.create({ email, passwordHash });
+    const user = await User.create({ email, passwordHash, isTestAccount });
 
     // Create an empty profile linked to this user
-    await Profile.create({ owner: user._id, username });
+    await Profile.create({ owner: user._id, username, isTestAccount });
 
     const { accessToken, refreshToken, refreshTokenExpiry } = generateTokenPair(user._id.toString());
     await User.findByIdAndUpdate(user._id, { refreshToken, refreshTokenExpiry });
