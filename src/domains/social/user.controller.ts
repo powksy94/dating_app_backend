@@ -8,6 +8,7 @@ import { Like } from '../discovery/like.model.js';
 import { Profile } from '../profile/profile.model.js';
 import { notifyAdminsNewReport } from './notify-admins-new-report.js';
 import { Admin } from '../admin/admin.model.js';
+import { inSameTestPool } from '../discovery/test-pool.js';
 
 export async function blockUser(req: AuthRequest, res: Response): Promise<void> {
     const blockerId = new mongoose.Types.ObjectId(req.userId);
@@ -54,6 +55,14 @@ export async function reportUser(req: AuthRequest, res: Response): Promise<void>
 
     if (!reason?.trim()) {
         res.status(400).json({ message: 'Une raison est requise' });
+        return;
+    }
+
+    // The feed already keeps test and real accounts apart, but the target id
+    // comes straight from the client: re-check here so a direct call can't cross
+    // (same rule as swipe.controller.ts's likeUser/dislikeUser).
+    if (!await inSameTestPool(reporterId.toString(), reportedId.toString())) {
+        res.status(404).json({ message: 'Utilisateur introuvable' });
         return;
     }
 

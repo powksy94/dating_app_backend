@@ -68,6 +68,7 @@ export async function createEvent(req: AuthRequest, res: Response): Promise<void
         location: { type: 'Point', coordinates: [parseFloat(lng), parseFloat(lat)] },
         genres: genres ? genres.split(',').map(g => g.trim()).filter(Boolean) : [],
         coverImageUrl, creatorId: req.userId, attendees: [],
+        isTestAccount: user.isTestAccount,
         capacityMin: parseInt(capacityMin),
         capacityMax: capacityMax ? parseInt(capacityMax) : undefined,
         isFree: isFree === 'true',

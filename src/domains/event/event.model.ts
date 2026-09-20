@@ -16,6 +16,10 @@ export interface IEvent extends Document {
     isFree:         boolean;
     price?:         number;
     status:         'pending' | 'approved' | 'rejected';
+    /** Set from the creator at creation, never by the client. Keeps test-account
+     * events out of the real event list, and vice versa (see swipe-feed.controller.ts
+     * for the same rule on discovery). */
+    isTestAccount:  boolean;
 }
 
 const EventSchema = new Schema<IEvent>({
@@ -37,6 +41,7 @@ const EventSchema = new Schema<IEvent>({
     isFree:         { type: Boolean, default: true },
     price:          { type: Number, min: 0 },
     status:         { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+    isTestAccount:  { type: Boolean, default: false },
 }, { timestamps: true });
 
 EventSchema.index({ location: '2dsphere' });

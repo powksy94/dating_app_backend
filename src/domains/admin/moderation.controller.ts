@@ -14,10 +14,11 @@ export async function listReports(_req: Request, res: Response): Promise<void> {
     const userIds = [...new Set(reports.flatMap(r =>
         [r.reporter?.toString(), r.reported.toString()].filter((id): id is string => Boolean(id))))];
     const [profiles, users] = await Promise.all([
-        Profile.find({ owner: { $in: userIds } }).select('owner username').lean(),
+        Profile.find({ owner: { $in: userIds } }).select('owner username isTestAccount').lean(),
         User.find({ _id: { $in: userIds } }).select('banned').lean(),
     ]);
-    const usernameOf = new Map(profiles.map(p => [p.owner.toString(), p.username]));
+    const usernameOf     = new Map(profiles.map(p => [p.owner.toString(), p.username]));
+    const isTestAccountOf = new Map(profiles.map(p => [p.owner.toString(), p.isTestAccount]));
     const bannedOf    = new Map(users.map(u => [(u._id as mongoose.Types.ObjectId).toString(), u.banned]));
 
     res.json(reports.map(r => ({
@@ -25,13 +26,19 @@ export async function listReports(_req: Request, res: Response): Promise<void> {
         reason:   r.reason,
         createdAt: (r as any).createdAt,
         // The review screens show this name, so an automatic report reads as such.
+        // isTestAccount lets the review screen flag noise from testing, without
+        // hiding it: a test account can be the only kind that exists pre-launch.
         reporter: r.reporter
-            ? { id: r.reporter, username: usernameOf.get(r.reporter.toString()) ?? null }
-            : { id: null, username: 'Nocturne (automatique)' },
+            ? {
+                id: r.reporter, username: usernameOf.get(r.reporter.toString()) ?? null,
+                isTestAccount: isTestAccountOf.get(r.reporter.toString()) ?? false,
+            }
+            : { id: null, username: 'Nocturne (automatique)', isTestAccount: false },
         reported: {
             id:       r.reported,
             username: usernameOf.get(r.reported.toString()) ?? null,
             banned:   bannedOf.get(r.reported.toString()) ?? false,
+            isTestAccount: isTestAccountOf.get(r.reported.toString()) ?? false,
         },
     })));
 }
