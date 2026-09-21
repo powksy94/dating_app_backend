@@ -8,6 +8,8 @@ export const PLAN_LIMITS = {
     whoVisitedMe:    { ombre: false, nocturne: true,     abyssal: true },
     rewind:          { ombre: false, nocturne: true,     abyssal: true },
     photosVisible:   { ombre: 2,     nocturne: 6,        abyssal: 6 },
+    // Conversation starters shown on a new match (see match/suggestions).
+    suggestionsPerMatch: { ombre: 5, nocturne: 7,        abyssal: 7 },
 } as const;
 
 export const BOOST_LIMITS: Record<Plan, { credits: number; period: 'month' | 'week' | null }> = {
