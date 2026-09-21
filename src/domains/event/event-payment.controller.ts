@@ -6,13 +6,13 @@ import { EventPayment } from './event-payment.model.js';
 import { logger } from '../../infrastructure/config/logger.js';
 
 export async function createPaymentIntent(req: AuthRequest, res: Response): Promise<void> {
-    if (!stripe) { res.status(503).json({ message: 'Paiement indisponible' }); return; }
+    if (!stripe) { res.status(503).json({ message: 'Payment unavailable' }); return; }
 
     const event = await Event.findOne({ _id: req.params.id, status: 'approved' });
-    if (!event) { res.status(404).json({ message: 'Évènement introuvable' }); return; }
-    if (event.isFree || !event.price) { res.status(400).json({ message: 'Cet évènement est gratuit' }); return; }
+    if (!event) { res.status(404).json({ message: 'Event not found' }); return; }
+    if (event.isFree || !event.price) { res.status(400).json({ message: 'This event is free' }); return; }
     if (event.attendees.some(a => a.equals(req.userId!))) {
-        res.status(409).json({ message: 'Déjà inscrit' });
+        res.status(409).json({ message: 'Already registered' });
         return;
     }
 
@@ -35,11 +35,11 @@ export async function createPaymentIntent(req: AuthRequest, res: Response): Prom
 
 export async function confirmPayment(req: AuthRequest, res: Response): Promise<void> {
     const { paymentIntentId } = req.body as { paymentIntentId?: string };
-    if (!paymentIntentId) { res.status(400).json({ message: 'paymentIntentId manquant' }); return; }
+    if (!paymentIntentId) { res.status(400).json({ message: 'paymentIntentId is required' }); return; }
 
     const settled = await settlePayment(paymentIntentId);
-    if (!settled) { res.status(400).json({ message: 'Paiement non confirmé' }); return; }
-    res.json({ message: 'Inscription confirmée' });
+    if (!settled) { res.status(400).json({ message: 'Payment not confirmed' }); return; }
+    res.json({ message: 'Registration confirmed' });
 }
 
 export async function stripeWebhook(req: Request, res: Response): Promise<void> {

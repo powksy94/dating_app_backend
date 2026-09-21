@@ -16,17 +16,17 @@ export async function sendElegie(req: AuthRequest, res: Response): Promise<void>
     const { text } = req.body as { text: string };
 
     if (!text || text.trim().length === 0) {
-        res.status(400).json({ message: 'Le texte est requis' }); return;
+        res.status(400).json({ message: 'Text is required' }); return;
     }
     if (text.length > 200) {
-        res.status(400).json({ message: 'Texte trop long (200 caractères max)' }); return;
+        res.status(400).json({ message: 'Text too long (200 characters max)' }); return;
     }
     if (fromId.equals(toId)) {
-        res.status(400).json({ message: 'Impossible de s\'envoyer une élégie à soi-même' }); return;
+        res.status(400).json({ message: 'You cannot send an elegy to yourself' }); return;
     }
 
     const user = await User.findById(fromId);
-    if (!user) { res.status(401).json({ message: 'Utilisateur introuvable' }); return; }
+    if (!user) { res.status(401).json({ message: 'User not found' }); return; }
 
     const limit = PLAN_LIMITS.elegiesPerMonth[user.subscriptionPlan];
     if (limit !== Infinity) {
@@ -38,7 +38,7 @@ export async function sendElegie(req: AuthRequest, res: Response): Promise<void>
         if (user.monthlyElegies.count >= limit) {
             res.status(403).json({
                 code: 'ELEGIE_LIMIT_REACHED',
-                message: `Limite de ${limit} élégies/mois atteinte`,
+                message: `Limit of ${limit} elegies/month reached`,
                 limit, remaining: 0,
             });
             return;
@@ -80,7 +80,7 @@ export async function sendElegie(req: AuthRequest, res: Response): Promise<void>
                 { matchId: matchDoc._id.toString(), type: 'match' });
         }
 
-        res.json({ message: 'Élégie envoyée', match: true, matchId: matchDoc._id });
+        res.json({ message: 'Elegy sent', match: true, matchId: matchDoc._id });
         return;
     }
 
@@ -94,5 +94,5 @@ export async function sendElegie(req: AuthRequest, res: Response): Promise<void>
             { type: 'elegie', fromId: fromId.toString() });
     }
 
-    res.json({ message: 'Élégie envoyée', match: false });
+    res.json({ message: 'Elegy sent', match: false });
 }

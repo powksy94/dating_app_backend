@@ -51,7 +51,7 @@ export async function getElegieStatus(req: AuthRequest, res: Response): Promise<
     const { PLAN_LIMITS, monthStr } = await import('../subscription/limits.js');
 
     const user = await User.findById(req.userId);
-    if (!user) { res.status(401).json({ message: 'Utilisateur introuvable' }); return; }
+    if (!user) { res.status(401).json({ message: 'User not found' }); return; }
 
     const limit = PLAN_LIMITS.elegiesPerMonth[user.subscriptionPlan];
     if (limit === Infinity) { res.json({ limit: null, remaining: null, unlimited: true }); return; }

@@ -10,12 +10,12 @@ export async function getMyVisitors(req: AuthRequest, res: Response): Promise<vo
     const userId = new mongoose.Types.ObjectId(req.userId);
 
     const user = await User.findById(userId);
-    if (!user) { res.status(401).json({ message: 'Utilisateur introuvable' }); return; }
+    if (!user) { res.status(401).json({ message: 'User not found' }); return; }
 
     if (!PLAN_LIMITS.whoVisitedMe[user.subscriptionPlan]) {
         res.status(403).json({
             code:         'PLAN_REQUIRED',
-            message:      'Voir qui a visité ton profil nécessite un abonnement Nocturne ou Abyssal',
+            message:      'Seeing who visited your profile requires a Nocturne or Abyssal subscription',
             requiredPlan: 'nocturne',
         });
         return;

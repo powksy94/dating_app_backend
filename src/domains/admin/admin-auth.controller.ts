@@ -28,7 +28,7 @@ setInterval(cleanup, 60_000);
 
 export async function requestAuth(req: Request, res: Response): Promise<void> {
     const { email } = req.body;
-    if (!email) { res.status(400).json({ message: 'email requis' }); return; }
+    if (!email) { res.status(400).json({ message: 'email is required' }); return; }
 
     const sessionId = randomUUID();
 
@@ -81,19 +81,19 @@ export function checkStatus(req: Request, res: Response): void {
 export async function respondAuth(req: AuthRequest, res: Response): Promise<void> {
     const { sessionId, approved } = req.body;
     if (!sessionId || approved === undefined) {
-        res.status(400).json({ message: 'sessionId et approved requis' });
+        res.status(400).json({ message: 'sessionId and approved are required' });
         return;
     }
 
     const session = sessions.get(sessionId);
     if (!session || Date.now() > session.expiresAt) {
         sessions.delete(sessionId);
-        res.status(404).json({ message: 'Session expirée ou introuvable' });
+        res.status(404).json({ message: 'Session expired or not found' });
         return;
     }
 
     if (!session.linkedUserId || req.userId !== session.linkedUserId) {
-        res.status(403).json({ message: 'Non autorisé' });
+        res.status(403).json({ message: 'Not authorized' });
         return;
     }
 
@@ -104,7 +104,7 @@ export async function respondAuth(req: AuthRequest, res: Response): Promise<void
     }
 
     const admin = await Admin.findById(session.adminId);
-    if (!admin) { res.status(500).json({ message: 'Admin introuvable' }); return; }
+    if (!admin) { res.status(500).json({ message: 'Admin not found' }); return; }
 
     const token = jwt.sign(
         { userId: admin._id.toString(), email: admin.email, role: 'admin' },

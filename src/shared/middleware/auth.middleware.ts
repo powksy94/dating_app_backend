@@ -8,7 +8,7 @@ export interface AuthRequest extends Request {
 export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction): void {
     const header = req.headers.authorization;
     if (!header?.startsWith('Bearer ')) {
-        res.status(401).json({ message: 'Token manquant' });
+        res.status(401).json({ message: 'Missing token' });
         return;
     }
 
@@ -18,6 +18,6 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
         req.userId = payload .userId;
         next();
     }   catch {
-        res.status(401).json({ message: 'Token invalide ou  expiré' });
+        res.status(401).json({ message: 'Invalid or expired token' });
     }
 }

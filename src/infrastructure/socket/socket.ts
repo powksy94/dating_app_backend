@@ -17,7 +17,7 @@ const lastSeen = new Map<string, Date>();
 
 let _io: Server | null = null;
 export function getIO(): Server {
-    if (!_io) throw new Error('Socket.io non initialisé');
+    if (!_io) throw new Error('Socket.io not initialized');
     return _io;
 }
 
@@ -36,13 +36,13 @@ export function initSocket(httpServer: HttpServer): Server {
 
     io.use((socket, next) => {
         const token = socket.handshake.auth?.token as string | undefined;
-        if (!token) return next(new Error('Token manquant'));
+        if (!token) return next(new Error('Missing token'));
         try {
             const payload = jwt.verify(token, process.env.JWT_SECRET!) as { userId: string };
             socket.data.userId = payload.userId;
             next();
         } catch {
-            next(new Error('Token invalide'));
+            next(new Error('Invalid token'));
         }
     });
 

@@ -16,7 +16,7 @@ export async function blockUser(req: AuthRequest, res: Response): Promise<void> 
     const blockedId = new mongoose.Types.ObjectId(targetId);
 
     if (blockerId.equals(blockedId)) {
-        res.status(400).json({ message: 'Impossible de se bloquer soi-même' });
+        res.status(400).json({ message: 'You cannot block yourself' });
         return;
     }
 
@@ -35,7 +35,7 @@ export async function blockUser(req: AuthRequest, res: Response): Promise<void> 
         ],
     });
 
-    res.json({ message: 'Utilisateur bloqué' });
+    res.json({ message: 'User blocked' });
 }
 
 export async function unblockUser(req: AuthRequest, res: Response): Promise<void> {
@@ -44,7 +44,7 @@ export async function unblockUser(req: AuthRequest, res: Response): Promise<void
     const blockedId = new mongoose.Types.ObjectId(targetId);
 
     await Block.deleteOne({ blocker: blockerId, blocked: blockedId });
-    res.json({ message: 'Utilisateur débloqué' });
+    res.json({ message: 'User unblocked' });
 }
 
 export async function reportUser(req: AuthRequest, res: Response): Promise<void> {
@@ -54,7 +54,7 @@ export async function reportUser(req: AuthRequest, res: Response): Promise<void>
     const { reason } = req.body as { reason: string };
 
     if (!reason?.trim()) {
-        res.status(400).json({ message: 'Une raison est requise' });
+        res.status(400).json({ message: 'A reason is required' });
         return;
     }
 
@@ -62,7 +62,7 @@ export async function reportUser(req: AuthRequest, res: Response): Promise<void>
     // comes straight from the client: re-check here so a direct call can't cross
     // (same rule as swipe.controller.ts's likeUser/dislikeUser).
     if (!await inSameTestPool(reporterId.toString(), reportedId.toString())) {
-        res.status(404).json({ message: 'Utilisateur introuvable' });
+        res.status(404).json({ message: 'User not found' });
         return;
     }
 
@@ -75,7 +75,7 @@ export async function reportUser(req: AuthRequest, res: Response): Promise<void>
     const reportedProfile = await Profile.findOne({ owner: reportedId }).select('username');
     notifyAdminsNewReport(reportedProfile?.username ?? 'Utilisateur', reason.trim()).catch(() => {});
 
-    res.json({ message: 'Signalement envoyé' });
+    res.json({ message: 'Report sent' });
 }
 
 export async function getIsLinkedAdmin(req: AuthRequest, res: Response): Promise<void> {

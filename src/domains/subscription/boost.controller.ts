@@ -17,7 +17,7 @@ function shouldReset(plan: 'ombre' | 'nocturne' | 'abyssal', lastReset: Date | n
 
 export async function getBoostStatus(req: AuthRequest, res: Response): Promise<void> {
     const user = await User.findById(req.userId);
-    if (!user) { res.status(401).json({ message: 'Utilisateur introuvable' }); return; }
+    if (!user) { res.status(401).json({ message: 'User not found' }); return; }
 
     const config = BOOST_LIMITS[user.subscriptionPlan];
     if (config.credits === 0) {
@@ -35,13 +35,13 @@ export async function getBoostStatus(req: AuthRequest, res: Response): Promise<v
 
 export async function useBoost(req: AuthRequest, res: Response): Promise<void> {
     const user = await User.findById(req.userId);
-    if (!user) { res.status(401).json({ message: 'Utilisateur introuvable' }); return; }
+    if (!user) { res.status(401).json({ message: 'User not found' }); return; }
 
     const config = BOOST_LIMITS[user.subscriptionPlan];
     if (config.credits === 0) {
         res.status(403).json({
             code:         'PLAN_REQUIRED',
-            message:      'Le boost nécessite un abonnement Nocturne ou Abyssal',
+            message:      'Boost requires a Nocturne or Abyssal subscription',
             requiredPlan: 'nocturne',
         });
         return;
@@ -55,7 +55,7 @@ export async function useBoost(req: AuthRequest, res: Response): Promise<void> {
     if (user.boostCredits.count <= 0) {
         res.status(403).json({
             code:      'BOOST_LIMIT_REACHED',
-            message:   `Plus de boost disponible pour ce ${config.period === 'week' ? 'semaine' : 'mois'}`,
+            message:   `No boost left for this ${config.period === 'week' ? 'week' : 'month'}`,
             available: 0,
         });
         return;

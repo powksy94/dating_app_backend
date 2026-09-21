@@ -11,12 +11,12 @@ export async function whoLikedMe(req: AuthRequest, res: Response): Promise<void>
     const userId = new mongoose.Types.ObjectId(req.userId);
 
     const user = await User.findById(userId);
-    if (!user) { res.status(401).json({ message: 'Utilisateur introuvable' }); return; }
+    if (!user) { res.status(401).json({ message: 'User not found' }); return; }
 
     if (!PLAN_LIMITS.whoLikedMe[user.subscriptionPlan]) {
         res.status(403).json({
             code:         'PLAN_REQUIRED',
-            message:      'Voir qui t\'a liké nécessite un abonnement Nocturne ou Abyssal',
+            message:      'Seeing who liked you requires a Nocturne or Abyssal subscription',
             requiredPlan: 'nocturne',
         });
         return;

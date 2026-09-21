@@ -11,12 +11,12 @@ export async function rewindLike(req: AuthRequest, res: Response): Promise<void>
     const userId = new mongoose.Types.ObjectId(req.userId);
 
     const user = await User.findById(userId);
-    if (!user) { res.status(401).json({ message: 'Utilisateur introuvable' }); return; }
+    if (!user) { res.status(401).json({ message: 'User not found' }); return; }
 
     if (!PLAN_LIMITS.rewind[user.subscriptionPlan]) {
         res.status(403).json({
             code:         'PLAN_REQUIRED',
-            message:      'Le rewind nécessite un abonnement Nocturne ou Abyssal',
+            message:      'Rewind requires a Nocturne or Abyssal subscription',
             requiredPlan: 'nocturne',
         });
         return;
@@ -33,7 +33,7 @@ export async function rewindLike(req: AuthRequest, res: Response): Promise<void>
     const lastPassTime = (lastPass as any)?.createdAt as Date | undefined;
 
     if (!lastLike && !lastPass) {
-        res.status(404).json({ message: 'Aucun swipe à annuler' });
+        res.status(404).json({ message: 'No swipe to undo' });
         return;
     }
 

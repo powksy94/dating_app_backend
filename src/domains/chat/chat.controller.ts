@@ -26,7 +26,7 @@ async function assertMatchMember(matchId: string, userId: string): Promise<boole
 export async function getMessages(req: AuthRequest, res: Response): Promise<void> {
     const userId = new mongoose.Types.ObjectId(req.userId!);
     if (!await assertMatchMember(req.params.matchId as string, req.userId!)) {
-        res.status(403).json({ message: 'Accès refusé' });
+        res.status(403).json({ message: 'Access denied' });
         return;
     }
     const messages = await Message.find({
@@ -39,11 +39,11 @@ export async function getMessages(req: AuthRequest, res: Response): Promise<void
 export async function sendMessage(req: AuthRequest, res: Response): Promise<void> {
     const { text } = req.body;
     if (!text?.trim()) {
-        res.status(400).json({ message: 'Message vide' });
+        res.status(400).json({ message: 'Empty message' });
         return;
     }
     if (!await assertMatchMember(req.params.matchId as string, req.userId!)) {
-        res.status(403).json({ message: 'Accès refusé' });
+        res.status(403).json({ message: 'Access denied' });
         return;
     }
 
@@ -54,7 +54,7 @@ export async function sendMessage(req: AuthRequest, res: Response): Promise<void
     if (await isContactInfoRefused(matchId, userId, text)) {
         res.status(422).json({
             code:    'CONTACT_INFO_BLOCKED',
-            message: 'Les liens et numéros de téléphone ne sont pas autorisés tant que l\'autre personne n\'a pas répondu.',
+            message: 'Links and phone numbers are not allowed until the other person has replied.',
         });
         return;
     }
@@ -104,7 +104,7 @@ export async function sendMessage(req: AuthRequest, res: Response): Promise<void
 }
 
 export async function uploadChatImage(req: AuthRequest, res: Response): Promise<void> {
-    if (!req.file) { res.status(400).json({ message: 'Aucune image' }); return; }
+    if (!req.file) { res.status(400).json({ message: 'No image' }); return; }
 
     const url = await new Promise<string>((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
@@ -121,7 +121,7 @@ export async function uploadChatImage(req: AuthRequest, res: Response): Promise<
 }
 
 export async function uploadChatAudio(req: AuthRequest, res: Response): Promise<void> {
-    if (!req.file) { res.status(400).json({ message: 'Aucun fichier audio' }); return; }
+    if (!req.file) { res.status(400).json({ message: 'No audio file' }); return; }
 
     const url = await new Promise<string>((resolve, reject) => {
         const stream = cloudinary.uploader.upload_stream(
@@ -142,10 +142,10 @@ export async function deleteForMe(req: AuthRequest, res: Response): Promise<void
     const messageId = req.params.messageId;
 
     const message = await Message.findById(messageId);
-    if (!message) { res.status(404).json({ message: 'Message introuvable' }); return; }
+    if (!message) { res.status(404).json({ message: 'Message not found' }); return; }
 
     await Message.findByIdAndUpdate(messageId, { $addToSet: { deletedFor: userId } });
-    res.json({ message: 'Message supprimé pour vous' });
+    res.json({ message: 'Message deleted for you' });
 }
 
 export async function deleteForAll(req: AuthRequest, res: Response): Promise<void> {
@@ -153,9 +153,9 @@ export async function deleteForAll(req: AuthRequest, res: Response): Promise<voi
     const messageId = req.params.messageId;
 
     const message = await Message.findById(messageId);
-    if (!message) { res.status(404).json({ message: 'Message introuvable' }); return; }
+    if (!message) { res.status(404).json({ message: 'Message not found' }); return; }
     if (!message.sender.equals(userId)) {
-        res.status(403).json({ message: 'Seul l\'expéditeur peut supprimer pour tous' });
+        res.status(403).json({ message: 'Only the sender can delete for everyone' });
         return;
     }
 

@@ -17,7 +17,7 @@ export const getMySubscription = async (req: AuthRequest, res: Response) => {
 export const subscribe = async (req: AuthRequest, res: Response) => {
     const { plan, period } = req.body;
     if (!VALID_PLANS.includes(plan) || !VALID_PERIODS.includes(period)) {
-        res.status(400).json({ message: 'Plan ou période invalide' });
+        res.status(400).json({ message: 'Invalid plan or period' });
         return;
     }
     await User.findByIdAndUpdate(req.userId, {

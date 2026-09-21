@@ -9,7 +9,7 @@ import { Admin } from '../../domains/admin/admin.model.js';
 export async function linkedAdminMiddleware(req: AuthRequest, res: Response, next: NextFunction): Promise<void> {
     const admin = await Admin.findOne({ linkedUserId: req.userId });
     if (!admin) {
-        res.status(403).json({ message: 'Accès réservé aux administrateurs' });
+        res.status(403).json({ message: 'Access restricted to administrators' });
         return;
     }
     next();

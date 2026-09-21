@@ -18,5 +18,5 @@ export async function resetLikes(req: AuthRequest, res: Response): Promise<void>
     // the deck refill, and a match can never form from a Pass anyway, so
     // there's no "keep matched" exclusion to apply here.
     await Pass.deleteMany({ from: userId });
-    res.json({ message: 'Likes réinitialisés' });
+    res.json({ message: 'Likes reset' });
 }

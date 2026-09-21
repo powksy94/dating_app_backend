@@ -11,7 +11,7 @@ import { Readable } from 'stream';
 
 export async function getMyProfile(req: AuthRequest, res: Response): Promise<void> {
     const profile = await Profile.findOne({ owner: req.userId });
-    if (!profile) { res.status(404).json({ message : 'Profil introuvable '}); return; }
+    if (!profile) { res.status(404).json({ message: 'Profile not found' }); return; }
     res.json(profile)
 }
 
@@ -21,12 +21,12 @@ export async function UptapeMyProfile(req: AuthRequest, res: Response): Promise<
     const { updates, rejected } = sanitizeProfileUpdate(req.body);
 
     if (rejected.includes('body')) {
-        res.status(400).json({ message: 'Requête invalide' });
+        res.status(400).json({ message: 'Invalid request' });
         return;
     }
     // The app is for adults only: an invalid or underage birth date refuses the whole update.
     if (rejected.includes('birthDate')) {
-        res.status(400).json({ message: 'Date de naissance invalide (18 ans minimum)' });
+        res.status(400).json({ message: 'Invalid birth date (18 years minimum)' });
         return;
     }
     if (rejected.length) {
@@ -55,7 +55,7 @@ export const uploadMiddleware = upload.array('photos', 6);
 export async function uploadPhotos(req: AuthRequest, res: Response): Promise<void> {
     const files = req.files as Express.Multer.File[];
     if (!files || files.length === 0) {
-        res.status(400).json({ message: 'Aucun fichier reçu' });
+        res.status(400).json({ message: 'No file received' });
         return;
     }
 
@@ -81,7 +81,7 @@ export async function uploadPhotos(req: AuthRequest, res: Response): Promise<voi
 
 export async function getProfileByUserId(req: AuthRequest, res: Response): Promise<void> {
     const profile = await Profile.findOne({ owner: req.params.userId });
-    if (!profile) { res.status(404).json({ message: 'Profile introuvable' }); return; }
+    if (!profile) { res.status(404).json({ message: 'Profile not found' }); return; }
 
     // Record the visit in the background (without blocking the response)
     if (req.userId !== req.params.userId) {
@@ -95,11 +95,11 @@ export async function getProfileByUserId(req: AuthRequest, res: Response): Promi
 
 export async function saveFcmToken(req: AuthRequest, res: Response): Promise<void> {
     const { token } = req.body as { token: string };
-    if (!token) { res.status(400).json({ message: 'Token requis' }); return; }
+    if (!token) { res.status(400).json({ message: 'Token is required' }); return; }
     // A device token belongs to one account at a time: if another account was
     // signed in on this device (e.g. logout that never reached the server),
     // release the token from it so it stops receiving the new user's pushes.
     await User.updateMany({ _id: { $ne: req.userId }, fcmToken: token }, { fcmToken: null });
     await User.findByIdAndUpdate(req.userId, { fcmToken: token });
-    res.json({ message: 'Token FCM enregistré' });
+    res.json({ message: 'FCM token saved' });
 }

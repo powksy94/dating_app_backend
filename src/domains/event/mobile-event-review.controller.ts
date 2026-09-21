@@ -13,20 +13,20 @@ export async function listPendingEventsForMobile(_req: AuthRequest, res: Respons
 
 export async function approveEventFromMobile(req: AuthRequest, res: Response): Promise<void> {
     if (typeof req.params.id !== 'string' || !mongoose.Types.ObjectId.isValid(req.params.id)) {
-        res.status(400).json({ message: 'Identifiant d\'évènement invalide' });
+        res.status(400).json({ message: 'Invalid event id' });
         return;
     }
     const event = await Event.findByIdAndUpdate(req.params.id, { status: 'approved' }, { new: true });
-    if (!event) { res.status(404).json({ message: 'Évènement introuvable' }); return; }
-    res.json({ message: 'Évènement approuvé' });
+    if (!event) { res.status(404).json({ message: 'Event not found' }); return; }
+    res.json({ message: 'Event approved' });
 }
 
 export async function rejectEventFromMobile(req: AuthRequest, res: Response): Promise<void> {
     if (typeof req.params.id !== 'string' || !mongoose.Types.ObjectId.isValid(req.params.id)) {
-        res.status(400).json({ message: 'Identifiant d\'évènement invalide' });
+        res.status(400).json({ message: 'Invalid event id' });
         return;
     }
     const event = await Event.findByIdAndUpdate(req.params.id, { status: 'rejected' }, { new: true });
-    if (!event) { res.status(404).json({ message: 'Évènement introuvable' }); return; }
-    res.json({ message: 'Évènement rejeté' });
+    if (!event) { res.status(404).json({ message: 'Event not found' }); return; }
+    res.json({ message: 'Event rejected' });
 }

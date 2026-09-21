@@ -34,24 +34,24 @@ export async function likeUser(req: AuthRequest, res: Response): Promise<void> {
     const toId   = new mongoose.Types.ObjectId(req.params.targetId as string);
 
     if (fromId.equals(toId)) {
-        res.status(400).json({ message: 'Impossible de se liker soi-même' });
+        res.status(400).json({ message: 'You cannot like yourself' });
         return;
     }
 
     // The feed already keeps test and real accounts apart, but the target id
     // comes straight from the client: re-check here so a direct call can't cross.
     if (!await inSameTestPool(fromId.toString(), toId.toString())) {
-        res.status(403).json({ message: 'Profil introuvable' });
+        res.status(403).json({ message: 'Profile not found' });
         return;
     }
 
     const user = await User.findById(fromId);
-    if (!user) { res.status(401).json({ message: 'Utilisateur introuvable' }); return; }
+    if (!user) { res.status(401).json({ message: 'User not found' }); return; }
 
     const { blocked, remaining } = await checkSwipeLimit(user);
     if (blocked) {
         const limit = PLAN_LIMITS.swipesPerDay[user.subscriptionPlan];
-        res.status(403).json({ code: 'SWIPE_LIMIT_REACHED', message: `Limite de ${limit} swipes/jour atteinte`, limit, remaining: 0 });
+        res.status(403).json({ code: 'SWIPE_LIMIT_REACHED', message: `Limit of ${limit} swipes/day reached`, limit, remaining: 0 });
         return;
     }
 
@@ -98,7 +98,7 @@ export async function dislikeUser(req: AuthRequest, res: Response): Promise<void
     const toId   = new mongoose.Types.ObjectId(req.params.targetId as string);
 
     if (!await inSameTestPool(userId.toString(), toId.toString())) {
-        res.status(403).json({ message: 'Profil introuvable' });
+        res.status(403).json({ message: 'Profile not found' });
         return;
     }
 
@@ -107,7 +107,7 @@ export async function dislikeUser(req: AuthRequest, res: Response): Promise<void
         const { blocked } = await checkSwipeLimit(user);
         if (blocked) {
             const limit = PLAN_LIMITS.swipesPerDay[user.subscriptionPlan];
-            res.status(403).json({ code: 'SWIPE_LIMIT_REACHED', message: `Limite de ${limit} swipes/jour atteinte`, limit, remaining: 0 });
+            res.status(403).json({ code: 'SWIPE_LIMIT_REACHED', message: `Limit of ${limit} swipes/day reached`, limit, remaining: 0 });
             return;
         }
     }
@@ -132,7 +132,7 @@ export async function getLikedProfiles(req: AuthRequest, res: Response): Promise
         const profile = await Profile.findOne({ owner: like.to }, { username: 1, avatarUrl: 1, photos: 1, age: 1 });
         const isMatch = await Match.exists({ users: { $all: [userId, like.to] } });
         return {
-            uid: like.to, username: profile?.username ?? 'Utilisateur inconnu',
+            uid: like.to, username: profile?.username ?? 'Unknown user',
             avatarUrl: profile?.avatarUrl ?? '', photos: profile?.photos ?? [],
             age: profile?.age ?? null, isMatch: !!isMatch,
         };
@@ -144,7 +144,7 @@ export async function getLikedProfiles(req: AuthRequest, res: Response): Promise
 
 export async function getSwipeStatus(req: AuthRequest, res: Response): Promise<void> {
     const user = await User.findById(req.userId);
-    if (!user) { res.status(401).json({ message: 'Utilisateur introuvable' }); return; }
+    if (!user) { res.status(401).json({ message: 'User not found' }); return; }
 
     const limit = PLAN_LIMITS.swipesPerDay[user.subscriptionPlan];
     if (limit === Infinity) { res.json({ limit: null, remaining: null, unlimited: true }); return; }

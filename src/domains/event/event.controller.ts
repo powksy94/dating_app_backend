@@ -87,32 +87,32 @@ export async function attendEvent(req: AuthRequest, res: Response): Promise<void
     const userId = new mongoose.Types.ObjectId(req.userId);
     const event  = await Event.findOne({ _id: req.params.id, status: 'approved' });
 
-    if (!event) { res.status(404).json({ message: 'Évènement introuvable' }); return; }
+    if (!event) { res.status(404).json({ message: 'Event not found' }); return; }
 
     // The list already keeps the pools apart, but the id comes straight from the
     // client: re-check here so a direct call can't cross (same rule as swipe.controller.ts).
     const viewer = await Profile.findOne({ owner: userId }).select('isTestAccount');
     if (Boolean(viewer?.isTestAccount) !== event.isTestAccount) {
-        res.status(404).json({ message: 'Évènement introuvable' }); return;
+        res.status(404).json({ message: 'Event not found' }); return;
     }
 
     if (!event.isFree) {
-        res.status(400).json({ message: 'Cet évènement est payant, passe par le paiement pour t\'inscrire' });
+        res.status(400).json({ message: 'This event is paid, use the payment flow to register' });
         return;
     }
     if (event.attendees.some(a => a.equals(userId))) {
-        res.status(409).json({ message: 'Déjà inscrit' }); return;
+        res.status(409).json({ message: 'Already registered' }); return;
     }
     if (event.capacityMax && event.attendees.length >= event.capacityMax) {
-        res.status(409).json({ message: 'Évènement complet' }); return;
+        res.status(409).json({ message: 'Event is full' }); return;
     }
 
     await Event.findByIdAndUpdate(req.params.id, { $addToSet: { attendees: userId } });
-    res.json({ message: 'Inscription confirmée' });
+    res.json({ message: 'Registration confirmed' });
 }
 
 export async function unattendEvent(req: AuthRequest, res: Response): Promise<void> {
     const userId = new mongoose.Types.ObjectId(req.userId);
     await Event.findByIdAndUpdate(req.params.id, { $pull: { attendees: userId } });
-    res.json({ message: 'Désinscription confirmée' });
+    res.json({ message: 'Unregistration confirmed' });
 }

@@ -30,7 +30,7 @@ function periodFromProductId(productId: string | undefined): Period {
 export async function revenueCatWebhook(req: Request, res: Response): Promise<void> {
     const expected = `Bearer ${process.env.REVENUECAT_WEBHOOK_SECRET}`;
     if (!process.env.REVENUECAT_WEBHOOK_SECRET || req.headers.authorization !== expected) {
-        res.status(401).json({ message: 'Non autorisé' });
+        res.status(401).json({ message: 'Not authorized' });
         return;
     }
 

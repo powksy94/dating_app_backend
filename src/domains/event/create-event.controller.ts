@@ -23,11 +23,11 @@ export async function createEvent(req: AuthRequest, res: Response): Promise<void
     };
 
     if (!title || !description || !date || !city || !address || !lat || !lng || !capacityMin) {
-        res.status(400).json({ message: 'Champs obligatoires manquants' }); return;
+        res.status(400).json({ message: 'Required fields are missing' }); return;
     }
 
     const user = await User.findById(req.userId);
-    if (!user) { res.status(401).json({ message: 'Utilisateur introuvable' }); return; }
+    if (!user) { res.status(401).json({ message: 'User not found' }); return; }
 
     const limit = PLAN_LIMITS.eventsPerMonth[user.subscriptionPlan];
     if (limit !== Infinity) {
@@ -39,7 +39,7 @@ export async function createEvent(req: AuthRequest, res: Response): Promise<void
         if (user.monthlyEvents.count >= limit) {
             res.status(403).json({
                 code: 'EVENT_LIMIT_REACHED',
-                message: `Limite de ${limit} événements/mois atteinte`,
+                message: `Limit of ${limit} events/month reached`,
                 limit, remaining: 0,
             });
             return;
@@ -78,5 +78,5 @@ export async function createEvent(req: AuthRequest, res: Response): Promise<void
 
     notifyAdminsNewEvent(event._id.toString(), event.title, event.description).catch(() => {});
 
-    res.status(201).json({ message: 'Événement soumis pour modération', eventId: event._id });
+    res.status(201).json({ message: 'Event submitted for moderation', eventId: event._id });
 }

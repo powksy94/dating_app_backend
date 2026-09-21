@@ -2,7 +2,7 @@ import rateLimit from 'express-rate-limit';
 
 const FIFTEEN_MINUTES = 15 * 60 * 1000;
 
-const tooManyRequests = { message: 'Trop de requêtes, réessaie dans quelques minutes.' };
+const tooManyRequests = { message: 'Too many requests, try again in a few minutes.' };
 
 /**
  * Generous limit on the whole API, per IP. It only stops scripts hammering the

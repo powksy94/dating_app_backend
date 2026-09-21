@@ -45,16 +45,16 @@ export async function listReports(_req: Request, res: Response): Promise<void> {
 
 export async function dismissReport(req: Request, res: Response): Promise<void> {
     if (typeof req.params.id !== 'string' || !mongoose.Types.ObjectId.isValid(req.params.id)) {
-        res.status(400).json({ message: 'Identifiant de signalement invalide' });
+        res.status(400).json({ message: 'Invalid report id' });
         return;
     }
     await Report.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Signalement classé sans suite' });
+    res.json({ message: 'Report dismissed' });
 }
 
 export async function banUser(req: Request, res: Response): Promise<void> {
     if (typeof req.params.userId !== 'string' || !mongoose.Types.ObjectId.isValid(req.params.userId)) {
-        res.status(400).json({ message: 'Identifiant utilisateur invalide' });
+        res.status(400).json({ message: 'Invalid user id' });
         return;
     }
     const { reason } = req.body as { reason?: string };
@@ -67,19 +67,19 @@ export async function banUser(req: Request, res: Response): Promise<void> {
         refreshToken: null,
     }, { new: true });
 
-    if (!user) { res.status(404).json({ message: 'Utilisateur introuvable' }); return; }
-    res.json({ message: 'Utilisateur banni' });
+    if (!user) { res.status(404).json({ message: 'User not found' }); return; }
+    res.json({ message: 'User banned' });
 }
 
 export async function unbanUser(req: Request, res: Response): Promise<void> {
     if (typeof req.params.userId !== 'string' || !mongoose.Types.ObjectId.isValid(req.params.userId)) {
-        res.status(400).json({ message: 'Identifiant utilisateur invalide' });
+        res.status(400).json({ message: 'Invalid user id' });
         return;
     }
     const user = await User.findByIdAndUpdate(req.params.userId, {
         banned: false, bannedReason: undefined,
     }, { new: true });
 
-    if (!user) { res.status(404).json({ message: 'Utilisateur introuvable' }); return; }
-    res.json({ message: 'Utilisateur débanni' });
+    if (!user) { res.status(404).json({ message: 'User not found' }); return; }
+    res.json({ message: 'User unbanned' });
 }

@@ -12,21 +12,21 @@ import { logger } from "../../infrastructure/config/logger.js";
 export async function adminLogin(req: Request, res: Response): Promise<void> {
     const { email, password } = req.body;
     if (!email || !password) {
-        res.status(400).json({ message: 'email et password requis' });
+        res.status(400).json({ message: 'email and password are required' });
         return;
     }
 
     const admin = await Admin.findOne({ email });
     if (!admin) {
         logger.warn(`Tentative de connexion admin échouée : ${email}`);
-        res.status(401).json({ message: 'Identifiants invalides' });
+        res.status(401).json({ message: 'Invalid credentials' });
         return;
     }
 
     const valid = await bcrypt.compare(password, admin.passwordHash);
     if (!valid) {
         logger.warn(`Mot de passe incorrect pour admin : ${email}`);
-        res.status(401).json({ message: 'Identifiants invalides' });
+        res.status(401).json({ message: 'Invalid credentials' });
         return;
     }
 

@@ -27,7 +27,7 @@ export async function register(req: Request, res: Response): Promise<void> {
     // after this (see profile-validation.ts, which the client can't rewrite).
     const isTestAccount = testBuild === true;
     if (!email || !password || !username) {
-        res.status(400).json({ message: 'email, password et username requis' });
+        res.status(400).json({ message: 'email, password and username are required' });
         return;
     }
 
@@ -41,7 +41,7 @@ export async function register(req: Request, res: Response): Promise<void> {
 
     const exists = await User.findOne({ email });
     if (exists) {
-        res.status(409).json({ message: 'Email déjà utilisé' });
+        res.status(409).json({ message: 'Email already in use' });
         return;
     }
 
@@ -60,24 +60,24 @@ export async function register(req: Request, res: Response): Promise<void> {
 export async function login(req: Request, res: Response): Promise<void> {
     const {email, password } = req.body;
     if (!email || !password) {
-        res.status(400).json({ message: 'email et password requis' });
+        res.status(400).json({ message: 'email and password are required' });
         return;
     }
 
     const user = await User.findOne({ email });
     if (!user) {
-        res.status(401).json({ message: 'Identifiants invalides' });
+        res.status(401).json({ message: 'Invalid credentials' });
         return;
     }
 
     const valid = await bcrypt.compare(password, user.passwordHash);
     if (!valid) {
-        res.status(401).json({ message: 'Identifiants invalides' });
+        res.status(401).json({ message: 'Invalid credentials' });
         return;
     }
 
     if (user.banned) {
-        res.status(403).json({ message: 'Ce compte a été suspendu', code: 'ACCOUNT_BANNED' });
+        res.status(403).json({ message: 'This account has been suspended', code: 'ACCOUNT_BANNED' });
         return;
     }
 
@@ -90,7 +90,7 @@ export async function login(req: Request, res: Response): Promise<void> {
 export async function me(req: Request, res: Response): Promise<void> {
     // req.userId injected by authMiddleware
     const user = await User.findById((req as any).userId).select('-passwordHash');
-    if (!user) { res.status(404).json({ message: 'Utilisateur introuvable' }); return; }
+    if (!user) { res.status(404).json({ message: 'User not found' }); return; }
     res.json(user);
 }
 
@@ -98,30 +98,30 @@ export async function changePassword(req: AuthRequest, res: Response): Promise<v
     const { currentPassword, newPassword } = req.body as { currentPassword: string; newPassword: string };
 
     if (!currentPassword || !newPassword) {
-        res.status(400).json({ message: 'Mot de passe actuel et nouveau requis' });
+        res.status(400).json({ message: 'Current and new password are required' });
         return;
     }
     if (newPassword.length < 12) {
-        res.status(400).json({ message: 'Le nouveau mot de passe doit faire au moins 12 caractères' });
+        res.status(400).json({ message: 'The new password must be at least 12 characters long' });
         return;
     }
 
     const user = await User.findById(req.userId);
     if (!user) {
-        res.status(404).json({ message: 'Utilisateur introuvable' });
+        res.status(404).json({ message: 'User not found' });
         return;
     }
 
     const valid = await bcrypt.compare(currentPassword, user.passwordHash);
     if (!valid) {
-        res.status(401).json({ message: 'Mot de passe actuel incorrect' });
+        res.status(401).json({ message: 'Current password is incorrect' });
         return;
     }
 
     user.passwordHash = await bcrypt.hash(newPassword, 12);
     await user.save();
 
-    res.json({ message: 'Mot de passe modifié avec succès' });
+    res.json({ message: 'Password changed successfully' });
 }
 
 export async function checkUsername(req: Request, res: Response): Promise<void> {
@@ -139,10 +139,10 @@ export async function checkUsername(req: Request, res: Response): Promise<void> 
 
 export async function refresh(req: Request, res: Response): Promise<void> {
     const { refreshToken } = req.body;
-    if (!refreshToken) { res.status(401).json({ message: 'Refresh token manquant' }); return; }
+    if (!refreshToken) { res.status(401).json({ message: 'Missing refresh token' }); return; }
 
     const user = await User.findOne({ refreshToken, refreshTokenExpiry: { $gt: new Date() } });
-    if (!user) { res.status(401).json({ message: 'Refresh token invalide ou expiré' }); return; }
+    if (!user) { res.status(401).json({ message: 'Invalid or expired refresh token' }); return; }
 
     const { accessToken, refreshToken: newRefreshToken, refreshTokenExpiry } = generateTokenPair(user._id.toString());
     await User.findByIdAndUpdate(user._id, { refreshToken: newRefreshToken, refreshTokenExpiry });
@@ -155,7 +155,7 @@ export async function logout(req: AuthRequest, res: Response): Promise<void> {
     await User.findByIdAndUpdate(req.userId, {
         refreshToken: null, refreshTokenExpiry: null, fcmToken: null,
     });
-    res.json({ message: 'Déconnecté' });
+    res.json({ message: 'Logged out' });
 }
 
 export async function deleteAccount(req: AuthRequest, res: Response): Promise<void> {
@@ -189,5 +189,5 @@ export async function deleteAccount(req: AuthRequest, res: Response): Promise<vo
 
     await User.deleteOne({ _id: userId });
 
-    res.json({ message: 'Compte supprimé avec succès' });
+    res.json({ message: 'Account deleted successfully' });
 }

@@ -21,7 +21,7 @@ export function appVersionMiddleware(req: Request, res: Response, next: NextFunc
 
         res.status(426).json({
             code:     'UPDATE_REQUIRED',
-            message:  'Mise à jour requise',
+            message:  'Update required',
             minBuild,
         });
     } catch {
