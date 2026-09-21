@@ -43,7 +43,7 @@ export async function confirmPayment(req: AuthRequest, res: Response): Promise<v
 }
 
 export async function stripeWebhook(req: Request, res: Response): Promise<void> {
-    if (!stripe) { res.status(503).send('Paiement indisponible'); return; }
+    if (!stripe) { res.status(503).send('Payment unavailable'); return; }
 
     const signature = req.headers['stripe-signature'];
     let event;
@@ -51,7 +51,7 @@ export async function stripeWebhook(req: Request, res: Response): Promise<void> 
         event = stripe.webhooks.constructEvent(req.body, signature!, process.env.STRIPE_WEBHOOK_SECRET!);
     } catch (err) {
         logger.warn('Stripe webhook signature invalide', { err });
-        res.status(400).send('Signature invalide');
+        res.status(400).send('Invalid signature');
         return;
     }
 

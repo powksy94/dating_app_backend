@@ -92,7 +92,7 @@ export async function sendMessage(req: AuthRequest, res: Response): Promise<void
             if (recipientUser?.fcmToken) {
                 await sendPushNotification(
                     recipientUser.fcmToken,
-                    senderProfile?.username ?? 'Nouveau message',
+                    senderProfile?.username ?? 'New message',
                     text.trim(),
                     { matchId, type: 'message' },
                 );

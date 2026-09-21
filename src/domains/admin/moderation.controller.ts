@@ -61,7 +61,7 @@ export async function banUser(req: Request, res: Response): Promise<void> {
 
     const user = await User.findByIdAndUpdate(req.params.userId, {
         banned:       true,
-        bannedReason: reason?.trim() || 'Non spécifiée',
+        bannedReason: reason?.trim() || 'Not specified',
         // Forces a re-login: the current session stays valid for at most
         // 1h (access token lifetime), the refresh will then fail.
         refreshToken: null,

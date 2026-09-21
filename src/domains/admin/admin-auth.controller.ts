@@ -49,8 +49,8 @@ export async function requestAuth(req: Request, res: Response): Promise<void> {
     if (admin && user?.fcmToken) {
         sendPushNotification(
             user.fcmToken,
-            '🔐 Connexion admin',
-            'Demande de connexion au panel admin. Approuves-tu ?',
+            '🔐 Admin login',
+            'Admin panel login request. Do you approve?',
             { type: 'admin_auth', sessionId },
         ).catch(() => {});
     }

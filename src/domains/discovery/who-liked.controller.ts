@@ -29,7 +29,7 @@ export async function whoLikedMe(req: AuthRequest, res: Response): Promise<void>
         const isMatch = await Match.exists({ users: { $all: [userId, like.from] } });
         return {
             uid:       like.from,
-            username:  profile?.username ?? 'Utilisateur inconnu',
+            username:  profile?.username ?? 'Unknown user',
             avatarUrl: profile?.avatarUrl ?? '',
             age:       profile?.age ?? null,
             isMatch:   !!isMatch,

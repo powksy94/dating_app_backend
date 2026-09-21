@@ -19,7 +19,7 @@ export async function notifyAdminsNewReport(reportedUsername: string, reason: st
     await Promise.all(users.map(user => user.fcmToken
         ? sendPushNotification(
             user.fcmToken,
-            '🚩 Signalement à traiter',
+            '🚩 Report to review',
             `${reportedUsername} : ${preview}`,
             { type: 'report_review' },
         )

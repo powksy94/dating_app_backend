@@ -136,7 +136,7 @@ export function initSocket(httpServer: HttpServer): Server {
                     const notifBody = message.imageUrl ? '📷 Photo' : message.text;
                     await sendPushNotification(
                         recipientUser.fcmToken,
-                        senderProfile?.username ?? 'Nouveau message',
+                        senderProfile?.username ?? 'New message',
                         notifBody,
                         { matchId, type: 'message' },
                     );

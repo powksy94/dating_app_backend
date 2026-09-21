@@ -73,7 +73,7 @@ export async function reportUser(req: AuthRequest, res: Response): Promise<void>
     });
 
     const reportedProfile = await Profile.findOne({ owner: reportedId }).select('username');
-    notifyAdminsNewReport(reportedProfile?.username ?? 'Utilisateur', reason.trim()).catch(() => {});
+    notifyAdminsNewReport(reportedProfile?.username ?? 'User', reason.trim()).catch(() => {});
 
     res.json({ message: 'Report sent' });
 }

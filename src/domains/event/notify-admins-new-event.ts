@@ -19,7 +19,7 @@ export async function notifyAdminsNewEvent(eventId: string, title: string, descr
     await Promise.all(users.map(user => user.fcmToken
         ? sendPushNotification(
             user.fcmToken,
-            '📋 Évènement à valider',
+            '📋 Event to review',
             `${title} : ${preview}`,
             { type: 'event_review', eventId },
         )

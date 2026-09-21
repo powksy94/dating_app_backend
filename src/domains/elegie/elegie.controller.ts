@@ -14,7 +14,7 @@ export async function getReceived(req: AuthRequest, res: Response): Promise<void
         return {
             id:             e._id,
             fromId:         e.from,
-            fromUsername:   profile?.username ?? 'Utilisateur inconnu',
+            fromUsername:   profile?.username ?? 'Unknown user',
             fromAvatarUrl:  profile?.avatarUrl ?? '',
             text:           e.text,
             status:         e.status,
@@ -35,7 +35,7 @@ export async function getSent(req: AuthRequest, res: Response): Promise<void> {
         return {
             id:           e._id,
             toId:         e.to,
-            toUsername:   profile?.username ?? 'Utilisateur inconnu',
+            toUsername:   profile?.username ?? 'Unknown user',
             toAvatarUrl:  profile?.avatarUrl ?? '',
             text:         e.text,
             status:       e.status,

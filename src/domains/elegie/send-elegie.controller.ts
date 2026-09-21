@@ -70,13 +70,13 @@ export async function sendElegie(req: AuthRequest, res: Response): Promise<void>
             User.findById(toId).select('fcmToken'),
         ]);
         if (toUser?.fcmToken) {
-            await sendPushNotification(toUser.fcmToken, '🖤 Nouveau match !',
-                `Tu as matché avec ${fromProfile?.username ?? 'quelqu\'un'}`,
+            await sendPushNotification(toUser.fcmToken, '🖤 New match!',
+                `You matched with ${fromProfile?.username ?? 'someone'}`,
                 { matchId: matchDoc._id.toString(), type: 'match' });
         }
         if (fromUser?.fcmToken) {
-            await sendPushNotification(fromUser.fcmToken, '🖤 Nouveau match !',
-                `Tu as matché avec ${toProfile?.username ?? 'quelqu\'un'}`,
+            await sendPushNotification(fromUser.fcmToken, '🖤 New match!',
+                `You matched with ${toProfile?.username ?? 'someone'}`,
                 { matchId: matchDoc._id.toString(), type: 'match' });
         }
 
@@ -89,8 +89,8 @@ export async function sendElegie(req: AuthRequest, res: Response): Promise<void>
         User.findById(toId).select('fcmToken'),
     ]);
     if (recipientUser?.fcmToken) {
-        await sendPushNotification(recipientUser.fcmToken, '✉️ Nouvelle élégie',
-            `${senderProfile?.username ?? 'Quelqu\'un'} t\'a envoyé une élégie`,
+        await sendPushNotification(recipientUser.fcmToken, '✉️ New elegy',
+            `${senderProfile?.username ?? 'Someone'} sent you an elegy`,
             { type: 'elegie', fromId: fromId.toString() });
     }
 

@@ -30,7 +30,7 @@ export async function getMyVisitors(req: AuthRequest, res: Response): Promise<vo
         const profile = await Profile.findOne({ owner: v.visitor }, { username: 1, avatarUrl: 1, age: 1 });
         return {
             uid:       v.visitor,
-            username:  profile?.username ?? 'Utilisateur inconnu',
+            username:  profile?.username ?? 'Unknown user',
             avatarUrl: profile?.avatarUrl ?? '',
             age:       profile?.age ?? null,
             visitedAt: v.visitedAt,

@@ -22,14 +22,14 @@ export async function reviewBio(userId: string, bio: string): Promise<void> {
 
     // The whole bio (700 characters at most) is kept, so the reviewer sees the
     // flagged word wherever it is.
-    const reason = `Bio signalée automatiquement : « ${bio} »`;
+    const reason = `Bio automatically flagged: "${bio}"`;
 
     const refreshed = await Report.findOneAndUpdate(filter, { $set: { reason } });
     if (refreshed) return;
 
     await Report.create({ ...filter, reason });
     const profile = await Profile.findOne({ owner: userId }).select('username');
-    notifyAdminsNewReport(profile?.username ?? 'Utilisateur', reason).catch(() => {});
+    notifyAdminsNewReport(profile?.username ?? 'User', reason).catch(() => {});
 }
 
 /**
@@ -41,12 +41,12 @@ export async function reviewBio(userId: string, bio: string): Promise<void> {
  */
 export async function reportBlockedContactInfo(userId: string, text: string): Promise<void> {
     const filter = { reported: userId, source: 'auto' as const, topic: 'chat_contact_info' };
-    const reason = `Lien ou numéro envoyé avant que l'autre personne ait répondu : « ${text} »`;
+    const reason = `Link or phone number sent before the other person replied: "${text}"`;
 
     const refreshed = await Report.findOneAndUpdate(filter, { $set: { reason } });
     if (refreshed) return;
 
     await Report.create({ ...filter, reason });
     const profile = await Profile.findOne({ owner: userId }).select('username');
-    notifyAdminsNewReport(profile?.username ?? 'Utilisateur', reason).catch(() => {});
+    notifyAdminsNewReport(profile?.username ?? 'User', reason).catch(() => {});
 }
