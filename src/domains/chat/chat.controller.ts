@@ -6,6 +6,7 @@ import { Profile } from "../profile/profile.model.js";
 import { AuthRequest } from "../../shared/middleware/auth.middleware.js";
 import { getIO } from "../../infrastructure/socket/socket.js";
 import { sendPushNotification } from "../../shared/services/notification.service.js";
+import { pushTexts } from "../../shared/services/push-messages.js";
 import { isContactInfoRefused } from "./contact-guard.js";
 import mongoose from "mongoose";
 import multer from "multer";
@@ -86,13 +87,13 @@ export async function sendMessage(req: AuthRequest, res: Response): Promise<void
 
         if (otherUserId && !otherInRoom) {
             const [recipientUser, senderProfile] = await Promise.all([
-                User.findById(otherUserId).select('fcmToken'),
+                User.findById(otherUserId).select('fcmToken locale'),
                 Profile.findOne({ owner: userId }).select('username'),
             ]);
             if (recipientUser?.fcmToken) {
                 await sendPushNotification(
                     recipientUser.fcmToken,
-                    senderProfile?.username ?? 'New message',
+                    senderProfile?.username ?? pushTexts(recipientUser.locale).newMessage,
                     text.trim(),
                     { matchId, type: 'message' },
                 );

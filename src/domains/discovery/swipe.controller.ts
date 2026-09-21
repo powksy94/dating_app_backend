@@ -7,7 +7,7 @@ import { Elegie } from "../elegie/elegie.model.js";
 import { Message } from "../chat/message.model.js";
 import { User, IUser } from "../../shared/models/user.model.js";
 import { AuthRequest } from "../../shared/middleware/auth.middleware.js";
-import { sendPushNotification } from "../../shared/services/notification.service.js";
+import { notifyMatch } from "../match/notify-match.js";
 import { getBlockedIds } from "../social/user.controller.js";
 import { inSameTestPool } from "./test-pool.js";
 import { PLAN_LIMITS, Plan, todayStr } from "../subscription/limits.js";
@@ -70,22 +70,7 @@ export async function likeUser(req: AuthRequest, res: Response): Promise<void> {
         if (elegie) {
             await Message.create({ matchId: matchDoc._id, sender: fromId, text: elegie.text });
         }
-        const [fromProfile, toProfile, fromUser, toUser] = await Promise.all([
-            Profile.findOne({ owner: fromId }).select('username'),
-            Profile.findOne({ owner: toId }).select('username'),
-            User.findById(fromId).select('fcmToken'),
-            User.findById(toId).select('fcmToken'),
-        ]);
-        if (toUser?.fcmToken) {
-            await sendPushNotification(toUser.fcmToken, '🖤 New match!',
-                `You matched with ${fromProfile?.username ?? 'someone'}`,
-                { matchId: matchDoc._id.toString(), type: 'match' });
-        }
-        if (fromUser?.fcmToken) {
-            await sendPushNotification(fromUser.fcmToken, '🖤 New match!',
-                `You matched with ${toProfile?.username ?? 'someone'}`,
-                { matchId: matchDoc._id.toString(), type: 'match' });
-        }
+        await notifyMatch(fromId, toId, matchDoc._id.toString());
         res.json({ match: true, matchId: matchDoc._id, remaining });
         return;
     }

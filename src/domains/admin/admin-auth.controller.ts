@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { Admin } from "./admin.model.js";
 import { User } from "../../shared/models/user.model.js";
 import { sendPushNotification } from "../../shared/services/notification.service.js";
+import { pushTexts } from "../../shared/services/push-messages.js";
 import { AuthRequest } from "../../shared/middleware/auth.middleware.js";
 
 interface Session {
@@ -34,7 +35,7 @@ export async function requestAuth(req: Request, res: Response): Promise<void> {
 
     const admin = await Admin.findOne({ email: email.toLowerCase() });
     const user  = admin?.linkedUserId
-        ? await User.findById(admin.linkedUserId).select('fcmToken')
+        ? await User.findById(admin.linkedUserId).select('fcmToken locale')
         : null;
 
     cleanup();
@@ -47,10 +48,11 @@ export async function requestAuth(req: Request, res: Response): Promise<void> {
 
     // Anti-enumeration: identical response whether the email is an admin or not
     if (admin && user?.fcmToken) {
+        const t = pushTexts(user.locale);
         sendPushNotification(
             user.fcmToken,
-            '🔐 Admin login',
-            'Admin panel login request. Do you approve?',
+            t.adminAuthTitle,
+            t.adminAuthBody,
             { type: 'admin_auth', sessionId },
         ).catch(() => {});
     }

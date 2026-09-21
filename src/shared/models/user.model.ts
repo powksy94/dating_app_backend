@@ -1,4 +1,5 @@
 import mongoose, { Schema, Document } from 'mongoose';
+import { PUSH_LOCALES, PushLocale } from '../services/push-messages.js';
 
 export interface IUser extends Document {
     email: string;
@@ -7,6 +8,9 @@ export interface IUser extends Document {
     subscriptionPlan: 'ombre' | 'nocturne' | 'abyssal';
     subscriptionPeriod: 'week' | 'month' | 'year';
     fcmToken?: string;
+    /** Language of the app on the user's device, sent with the push token.
+     * Picks the language of the push notifications (see push-messages.ts). */
+    locale:   PushLocale;
     refreshToken?:       string;
     refreshTokenExpiry?: Date;
     dailySwipes:    { count: number; date: string };
@@ -27,6 +31,9 @@ const UserSchema = new Schema<IUser>({
     subscriptionPlan:   { type: String, enum: ['ombre','nocturne','abyssal'], default: 'ombre' },
     subscriptionPeriod: { type: String, enum: ['week','month','year'], default: 'month' },
     fcmToken:            { type: String },
+    // 'fr' by default: accounts that predate this field, and app versions that do
+    // not send a locale yet, keep receiving French notifications as before.
+    locale:              { type: String, enum: PUSH_LOCALES, default: 'fr' },
     refreshToken:        { type: String, default: null },
     refreshTokenExpiry:  { type: Date,   default: null },
     dailySwipes: {

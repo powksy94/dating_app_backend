@@ -7,6 +7,7 @@ import { Match } from '../../domains/match/match.model.js';
 import { User } from '../../shared/models/user.model.js';
 import { Profile } from '../../domains/profile/profile.model.js';
 import { sendPushNotification } from '../../shared/services/notification.service.js';
+import { pushTexts } from '../../shared/services/push-messages.js';
 import { isContactInfoRefused } from '../../domains/chat/contact-guard.js';
 
 // userIds currently connected
@@ -129,14 +130,15 @@ export function initSocket(httpServer: HttpServer): Server {
 
             if (otherUserId && !otherInRoom) {
                 const [recipientUser, senderProfile] = await Promise.all([
-                    User.findById(otherUserId).select('fcmToken'),
+                    User.findById(otherUserId).select('fcmToken locale'),
                     Profile.findOne({ owner: userId }).select('username'),
                 ]);
                 if (recipientUser?.fcmToken) {
-                    const notifBody = message.imageUrl ? '📷 Photo' : message.text;
+                    const t = pushTexts(recipientUser.locale);
+                    const notifBody = message.imageUrl ? t.photo : message.text;
                     await sendPushNotification(
                         recipientUser.fcmToken,
-                        senderProfile?.username ?? 'New message',
+                        senderProfile?.username ?? t.newMessage,
                         notifBody,
                         { matchId, type: 'message' },
                     );

@@ -7,6 +7,7 @@ import cloudinary from "../../infrastructure/config/cloudinary.js";
 import { sanitizeProfileUpdate } from "./profile-validation.js";
 import { reviewBio } from "../social/auto-report.js";
 import { logger } from "../../infrastructure/config/logger.js";
+import { isPushLocale, PushLocale } from "../../shared/services/push-messages.js";
 import { Readable } from 'stream';
 
 export async function getMyProfile(req: AuthRequest, res: Response): Promise<void> {
@@ -94,12 +95,16 @@ export async function getProfileByUserId(req: AuthRequest, res: Response): Promi
 }
 
 export async function saveFcmToken(req: AuthRequest, res: Response): Promise<void> {
-    const { token } = req.body as { token: string };
+    const { token, locale } = req.body as { token: string; locale?: string };
     if (!token) { res.status(400).json({ message: 'Token is required' }); return; }
     // A device token belongs to one account at a time: if another account was
     // signed in on this device (e.g. logout that never reached the server),
     // release the token from it so it stops receiving the new user's pushes.
     await User.updateMany({ _id: { $ne: req.userId }, fcmToken: token }, { fcmToken: null });
-    await User.findByIdAndUpdate(req.userId, { fcmToken: token });
+    // The locale is optional (older app versions do not send it) and is only
+    // stored when it is one we have push texts for.
+    const update: { fcmToken: string; locale?: PushLocale } = { fcmToken: token };
+    if (isPushLocale(locale)) update.locale = locale;
+    await User.findByIdAndUpdate(req.userId, update);
     res.json({ message: 'FCM token saved' });
 }

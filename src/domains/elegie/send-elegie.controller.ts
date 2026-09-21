@@ -7,6 +7,8 @@ import { Message } from '../chat/message.model.js';
 import { Profile } from '../profile/profile.model.js';
 import { User } from '../../shared/models/user.model.js';
 import { sendPushNotification } from '../../shared/services/notification.service.js';
+import { pushTexts } from '../../shared/services/push-messages.js';
+import { notifyMatch } from '../match/notify-match.js';
 import { PLAN_LIMITS, monthStr } from '../subscription/limits.js';
 import mongoose from 'mongoose';
 
@@ -63,22 +65,7 @@ export async function sendElegie(req: AuthRequest, res: Response): Promise<void>
         await Elegie.findByIdAndUpdate(elegie!._id, { status: 'matched' });
         await Message.create({ matchId: matchDoc._id, sender: fromId, text: text.trim() });
 
-        const [fromProfile, toProfile, fromUser, toUser] = await Promise.all([
-            Profile.findOne({ owner: fromId }).select('username'),
-            Profile.findOne({ owner: toId }).select('username'),
-            User.findById(fromId).select('fcmToken'),
-            User.findById(toId).select('fcmToken'),
-        ]);
-        if (toUser?.fcmToken) {
-            await sendPushNotification(toUser.fcmToken, '🖤 New match!',
-                `You matched with ${fromProfile?.username ?? 'someone'}`,
-                { matchId: matchDoc._id.toString(), type: 'match' });
-        }
-        if (fromUser?.fcmToken) {
-            await sendPushNotification(fromUser.fcmToken, '🖤 New match!',
-                `You matched with ${toProfile?.username ?? 'someone'}`,
-                { matchId: matchDoc._id.toString(), type: 'match' });
-        }
+        await notifyMatch(fromId, toId, matchDoc._id.toString());
 
         res.json({ message: 'Elegy sent', match: true, matchId: matchDoc._id });
         return;
@@ -86,11 +73,12 @@ export async function sendElegie(req: AuthRequest, res: Response): Promise<void>
 
     const [senderProfile, recipientUser] = await Promise.all([
         Profile.findOne({ owner: fromId }).select('username'),
-        User.findById(toId).select('fcmToken'),
+        User.findById(toId).select('fcmToken locale'),
     ]);
     if (recipientUser?.fcmToken) {
-        await sendPushNotification(recipientUser.fcmToken, '✉️ New elegy',
-            `${senderProfile?.username ?? 'Someone'} sent you an elegy`,
+        const t = pushTexts(recipientUser.locale);
+        await sendPushNotification(recipientUser.fcmToken, t.newElegyTitle,
+            t.newElegyBody(senderProfile?.username ?? t.someone),
             { type: 'elegie', fromId: fromId.toString() });
     }
 
