@@ -1,4 +1,4 @@
-import { bandKey, checkBandName } from '../../profile/band-name.js';
+import { bandKey, checkBandName, FavoriteBand } from '../../profile/band-name.js';
 import { TagFrequency } from './tag-frequency.js';
 import {
     TAG_FIELDS, TagField, VOCABULARY, TEMPLATES_BY_FIELD, FORMAT_TEMPLATES, SENSITIVE_VIBES, pickTemplate,
@@ -13,7 +13,9 @@ export interface Suggestion {
     message:  string;
     tag?:     string;
     tag2?:    string;
-    band?:    string;
+    band?:      string;
+    /** Set only when `band` was picked from Spotify search, not typed free text. */
+    bandImageUrl?: string;
     event?:   string;
 }
 
@@ -27,7 +29,7 @@ export interface SuggestionsResult {
     suggestions: Suggestion[];
 }
 
-export type SuggestionProfile = Record<TagField, string[]> & { favoriteBands: string[] };
+export type SuggestionProfile = Record<TagField, string[]> & { favoriteBands: FavoriteBand[] };
 
 export interface SuggestionInput {
     /** The person who will see the suggestions (the sender of the chosen message). */
@@ -59,17 +61,19 @@ function insertable(text: string): string | null {
     return verdict === 'ok' && name ? name : null;
 }
 
-// Favorite bands both have, in the spelling of the person who sees the suggestion.
-function commonBands(me: SuggestionProfile, other: SuggestionProfile): string[] {
-    const theirs = new Set(other.favoriteBands.map(bandKey));
+// Favorite bands both have, in the spelling of the person who sees the suggestion
+// (its own imageUrl if that copy came from Spotify, even when the other person's
+// copy of the same band did not).
+function commonBands(me: SuggestionProfile, other: SuggestionProfile): FavoriteBand[] {
+    const theirs = new Set(other.favoriteBands.map((band) => bandKey(band.name)));
     const seen   = new Set<string>();
-    const bands: string[] = [];
+    const bands: FavoriteBand[] = [];
     for (const band of me.favoriteBands) {
-        const key = bandKey(band);
-        const safe = insertable(band);
+        const key  = bandKey(band.name);
+        const safe = insertable(band.name);
         if (!safe || !theirs.has(key) || seen.has(key)) continue;
         seen.add(key);
-        bands.push(safe);
+        bands.push({ name: safe, imageUrl: band.imageUrl });
     }
     return bands;
 }
@@ -154,7 +158,7 @@ export function buildSuggestions(input: SuggestionInput): SuggestionsResult {
     const event = commonEvent ? insertable(commonEvent) : null;
     if (event) add({ hook: 'hook_event', message: 'event_1', event });
     for (const band of commonBands(me, other).slice(0, MAX_BAND_SUGGESTIONS)) {
-        add({ hook: 'hook_band', message: 'band_1', band });
+        add({ hook: 'hook_band', message: 'band_1', band: band.name, bandImageUrl: band.imageUrl });
     }
     const tags = orderTags(sharedTags(me, other, frequency));
     for (const item of tags) {
@@ -167,12 +171,15 @@ export function buildSuggestions(input: SuggestionInput): SuggestionsResult {
     }
 
     for (const band of other.favoriteBands) {
-        const safe = insertable(band);
+        const safe = insertable(band.name);
         if (safe) {
             return {
                 hasCommon: false,
                 source: 'other_band',
-                suggestions: [{ hook: 'hook_other_band', message: 'other_band_1', band: safe }],
+                suggestions: [{
+                    hook: 'hook_other_band', message: 'other_band_1',
+                    band: safe, bandImageUrl: band.imageUrl,
+                }],
             };
         }
     }

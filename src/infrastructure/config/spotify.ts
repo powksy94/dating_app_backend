@@ -49,3 +49,32 @@ export async function getSpotifyToken(): Promise<string | null> {
         return null;
     }
 }
+
+export interface SpotifyArtistInfo {
+    name:     string;
+    imageUrl: string | null;
+}
+
+/**
+ * Looks up one artist by id, straight from Spotify. Used to save a favorite
+ * band picked from search: the client only sends the id it got from a search
+ * result, never its own name/image for that id, and this is what the server
+ * actually stores, so a client can't spoof another artist's name or picture.
+ * Null when Spotify is unavailable or the id no longer resolves; the caller
+ * must then fall back to the free-text path, not fail the whole update.
+ */
+export async function getSpotifyArtist(id: string): Promise<SpotifyArtistInfo | null> {
+    const token = await getSpotifyToken();
+    if (!token) return null;
+    try {
+        const res = await fetch(`https://api.spotify.com/v1/artists/${encodeURIComponent(id)}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) return null;
+        const artist = await res.json() as { name: string; images: { url: string }[] };
+        return { name: artist.name, imageUrl: artist.images.at(-1)?.url ?? null };
+    } catch (err) {
+        logger.warn('Spotify artist lookup failed', { err });
+        return null;
+    }
+}

@@ -1,4 +1,5 @@
 ﻿import mongoose, { Schema, Document } from "mongoose";
+import { FavoriteBand } from "./band-name.js";
 
 export interface IProfile extends Document {
     owner:              mongoose.Types.ObjectId;
@@ -14,7 +15,7 @@ export interface IProfile extends Document {
     soundIntensity:     string[];
     musicEras:          string[];
     discoveryFormats:   string[];
-    favoriteBands:      string[];
+    favoriteBands:      FavoriteBand[];
     upcomingEvents:     string[];
     socialLinks:        Map<string, string>;
     location?:          { type: 'Point'; coordinates: [number, number] };
@@ -44,7 +45,15 @@ const ProfileSchema = new Schema<IProfile>({
     soundIntensity:     [String],
     musicEras:          [String],
     discoveryFormats:   [String],
-    favoriteBands:      [String],
+    // A plain typed name has only `name`; one picked from Spotify search also
+    // carries `imageUrl` and `spotifyId` (see band-name.ts, sanitizeFavoriteBands).
+    // `_id: false`: a favorite band is a value, not an entity worth its own id.
+    favoriteBands: [{
+        _id:       false,
+        name:      { type: String, required: true },
+        imageUrl:  { type: String },
+        spotifyId: { type: String },
+    }],
     upcomingEvents:     [String],
     socialLinks:        { type: Map, of: String, default: {} },
     birthDate:          { type: Date },

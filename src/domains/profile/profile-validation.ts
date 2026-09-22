@@ -1,4 +1,4 @@
-import { sanitizeBandList } from './band-name.js';
+import { sanitizeFavoriteBands } from './band-name.js';
 import { validatePhotos } from './photo-urls.js';
 import {
     MUSIC_GENRES, MUSIC_VIBES, AESTHETICS, SOUND_INTENSITY, MUSIC_ERAS,
@@ -22,7 +22,9 @@ export interface ProfileUpdate {
 }
 
 // A validator returns the cleaned value, or undefined when the value is refused.
-type Validator = (value: unknown) => unknown;
+// Only favoriteBands is actually async (it may confirm a pick against Spotify);
+// every other validator stays a plain synchronous function.
+type Validator = (value: unknown) => unknown | Promise<unknown>;
 
 const oneOf = (allowed: readonly string[]): Validator => (value) =>
     typeof value === 'string' && allowed.includes(value) ? value : undefined;
@@ -90,7 +92,7 @@ const VALIDATORS: Record<string, Validator> = {
     soundIntensity:    listOf(SOUND_INTENSITY),
     musicEras:         listOf(MUSIC_ERAS),
     discoveryFormats:  listOf(DISCOVERY_FORMATS),
-    favoriteBands:     (value) => sanitizeBandList(value) ?? undefined,
+    favoriteBands:     async (value) => (await sanitizeFavoriteBands(value)) ?? undefined,
     photos:            validatePhotos,
     ageMin:           numberInRange(MIN_ADULT_AGE, 99),
     ageMax:            numberInRange(MIN_ADULT_AGE, 99),
@@ -101,7 +103,7 @@ const VALIDATORS: Record<string, Validator> = {
 };
 
 /** Validates a profile update body and returns only what can be saved safely. */
-export function sanitizeProfileUpdate(body: unknown): ProfileUpdate {
+export async function sanitizeProfileUpdate(body: unknown): Promise<ProfileUpdate> {
     if (typeof body !== 'object' || body === null || Array.isArray(body)) {
         return { updates: {}, rejected: ['body'] };
     }
@@ -111,7 +113,7 @@ export function sanitizeProfileUpdate(body: unknown): ProfileUpdate {
 
     for (const [key, validate] of Object.entries(VALIDATORS)) {
         if (input[key] === undefined) continue;
-        const cleaned = validate(input[key]);
+        const cleaned = await validate(input[key]);
         if (cleaned === undefined) rejected.push(key);
         else updates[key] = cleaned;
     }

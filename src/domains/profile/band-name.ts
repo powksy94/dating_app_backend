@@ -1,5 +1,14 @@
 import { containsBannedWord } from '../../shared/data/banned-words.js';
 import { containsProfanity, THEME_WORDS } from '../../shared/data/profanity.js';
+import { getSpotifyArtist } from '../../infrastructure/config/spotify.js';
+
+/** A favorite band as stored on a profile. `imageUrl`/`spotifyId` are only
+ * present for a band picked from Spotify search; a plain typed name has neither. */
+export interface FavoriteBand {
+    name:       string;
+    imageUrl?:  string;
+    spotifyId?: string;
+}
 
 export const MAX_FAVORITE_BANDS = 20;
 // The app caps the input at 60 characters; the server is a little more lenient
@@ -59,23 +68,57 @@ export function checkBandName(raw: unknown): { verdict: BandNameVerdict; name?: 
     return { verdict: 'ok', name };
 }
 
+// A legacy profile predates favorite bands having images: its favoriteBands is
+// a plain string array (see migrate-favorite-bands.ts, which upgrades stored
+// documents to objects, and this fallback for whatever it hasn't reached yet).
+function rawEntryToInput(item: unknown): { name: unknown; spotifyId: unknown } {
+    if (typeof item === 'string') return { name: item, spotifyId: undefined };
+    const entry = item as { name?: unknown; spotifyId?: unknown } | null;
+    return { name: entry?.name, spotifyId: entry?.spotifyId };
+}
+
 /**
  * Cleans a favorite bands list: keeps only acceptable names, removes duplicates
  * (same band whatever the case or spacing) and caps the count. Returns null
  * when the value is not a list, so the caller can leave the stored value alone.
+ *
+ * A client can only ever pick a Spotify artist by its id, taken from a search
+ * result; it never gets to declare that id's name or image itself. When
+ * `spotifyId` is present, this re-fetches that artist from Spotify and uses
+ * its name and image, ignoring whatever name the client sent for it (the same
+ * "the server decides, the client only points" rule as the pseudo and photo
+ * checks). If Spotify can't confirm the id (rate-limited, deleted, disabled),
+ * the entry falls back to plain free text instead of being dropped.
  */
-export function sanitizeBandList(raw: unknown): string[] | null {
+export async function sanitizeFavoriteBands(raw: unknown): Promise<FavoriteBand[] | null> {
     if (!Array.isArray(raw)) return null;
     const seen = new Set<string>();
-    const bands: string[] = [];
+    const bands: FavoriteBand[] = [];
+
     for (const item of raw) {
-        const { verdict, name } = checkBandName(item);
-        if (verdict !== 'ok' || !name) continue;
-        const key = bandKey(name);
+        if (bands.length === MAX_FAVORITE_BANDS) break;
+        const { name: rawName, spotifyId } = rawEntryToInput(item);
+
+        let band: FavoriteBand | null = null;
+        if (typeof spotifyId === 'string' && spotifyId) {
+            const artist = await getSpotifyArtist(spotifyId);
+            if (artist) {
+                const { verdict, name } = checkBandName(artist.name);
+                if (verdict === 'ok' && name) {
+                    band = { name, spotifyId, imageUrl: artist.imageUrl ?? undefined };
+                }
+            }
+        }
+        if (!band) {
+            const { verdict, name } = checkBandName(rawName);
+            if (verdict !== 'ok' || !name) continue;
+            band = { name };
+        }
+
+        const key = bandKey(band.name);
         if (seen.has(key)) continue;
         seen.add(key);
-        bands.push(name);
-        if (bands.length === MAX_FAVORITE_BANDS) break;
+        bands.push(band);
     }
     return bands;
 }

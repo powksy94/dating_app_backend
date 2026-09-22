@@ -19,7 +19,7 @@ export async function getMyProfile(req: AuthRequest, res: Response): Promise<voi
 export async function UptapeMyProfile(req: AuthRequest, res: Response): Promise<void> {
     // Every value is validated (vocabulary, ranges, adult age, favorite bands...),
     // see profile-validation.ts. A value that fails is ignored and the rest is saved.
-    const { updates, rejected } = sanitizeProfileUpdate(req.body);
+    const { updates, rejected } = await sanitizeProfileUpdate(req.body);
 
     if (rejected.includes('body')) {
         res.status(400).json({ message: 'Invalid request' });
