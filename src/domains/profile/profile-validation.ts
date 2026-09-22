@@ -36,6 +36,31 @@ const listOf = (allowed: readonly string[]): Validator => (value) => {
     return [...new Set(kept)];
 };
 
+// Only a Spotify profile link is accepted for now: socialLinks has no UI for
+// any other platform, and letting a client set arbitrary key/url pairs here
+// would put unverified links on a profile with no domain check at all.
+const SPOTIFY_HOSTS = ['open.spotify.com', 'spotify.com'];
+
+function isSpotifyProfileUrl(value: unknown): value is string {
+    if (typeof value !== 'string') return false;
+    try {
+        const url = new URL(value);
+        return url.protocol === 'https:'
+            && SPOTIFY_HOSTS.some((host) => url.hostname === host || url.hostname.endsWith(`.${host}`));
+    } catch {
+        return false;
+    }
+}
+
+// An invalid or missing link clears the field instead of rejecting the whole
+// update, the same way an unusable favorite band is dropped rather than
+// failing the rest of the profile.
+function validateSocialLinks(value: unknown): Record<string, string> | undefined {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) return undefined;
+    const spotify = (value as Record<string, unknown>).spotify;
+    return isSpotifyProfileUrl(spotify) ? { spotify } : {};
+}
+
 const numberInRange = (min: number, max: number): Validator => (value) => {
     if (typeof value !== 'number' || !Number.isFinite(value)) return undefined;
     return Math.round(Math.min(Math.max(value, min), max));
@@ -77,12 +102,15 @@ function validateLocation(value: unknown): { type: 'Point'; coordinates: [number
     return { type: 'Point', coordinates: [lng, lat] };
 }
 
-// Only the fields the app really sends. username, avatarUrl, age, socialLinks and
-// upcomingEvents are deliberately absent: the app never writes them through this
-// endpoint, and letting a client set them bypassed the pseudo check (banned
-// words, uniqueness) and allowed arbitrary links on a profile.
+// Only the fields the app really sends. username, avatarUrl, age and
+// upcomingEvents are deliberately absent: the app never writes them through
+// this endpoint, and letting a client set them bypassed the pseudo check
+// (banned words, uniqueness) and allowed arbitrary links on a profile.
+// socialLinks is narrower still: only a Spotify link goes through (see
+// validateSocialLinks), everything else about it stays refused for now.
 const VALIDATORS: Record<string, Validator> = {
     bio:               validateBio,
+    socialLinks:       validateSocialLinks,
     gender:            oneOf(GENDERS),
     pronouns:          oneOf(PRONOUNS),
     genderPreferences: listOf(GENDER_PREFERENCES),
