@@ -30,6 +30,7 @@ import userRoutes           from './src/domains/social/user.routes.js';
 import mobileReportReviewRoutes from './src/domains/social/mobile-report-review.routes.js';
 import boostRoutes          from './src/domains/subscription/boost.routes.js';
 import visitRoutes          from './src/domains/visit/visit.routes.js';
+import discordOAuthRoutes   from './src/domains/profile/discord-oauth.routes.js';
 import { appVersionMiddleware } from './src/shared/middleware/app-version.middleware.js';
 import { apiLimiter } from './src/shared/middleware/rate-limit.middleware.js';
 
@@ -54,6 +55,7 @@ app.use('/api', appVersionMiddleware);
 
 app.use('/api/auth', authRoutes);
 app.use('/api/profile', profileRoutes);
+app.use('/api/oauth/discord', discordOAuthRoutes);
 app.use('/api/swipe', swipeRoutes);
 app.use('/api/matches', matchRoutes);
 app.use('/api/chat', chatRoutes);
