@@ -23,6 +23,11 @@ export interface IUser extends Document {
      * auth.controller.ts). Keeps test accounts (internal/closed testing) out of
      * the real discovery pool, and vice versa. */
     isTestAccount:  boolean;
+    /** Founding-member launch gift: set to 'pending' at registration for the
+     * first 50 real accounts (see PromoCounter, auth.controller.ts), then
+     * 'claimed' once the reveal animation's claim call succeeds. Absent for
+     * every account outside that window. */
+    foundingMemberReward?: 'pending' | 'claimed';
 }
 
 const UserSchema = new Schema<IUser>({
@@ -55,6 +60,7 @@ const UserSchema = new Schema<IUser>({
     banned:       { type: Boolean, default: false },
     bannedReason: { type: String },
     isTestAccount: { type: Boolean, default: false },
+    foundingMemberReward: { type: String, enum: ['pending', 'claimed'] },
 }, { timestamps: true });
 
 export const User = mongoose.model<IUser>('User', UserSchema);

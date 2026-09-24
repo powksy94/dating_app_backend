@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import crypto from 'crypto';
 import mongoose from 'mongoose';
 import { User } from "../../shared/models/user.model.js";
+import { PromoCounter } from "../../shared/models/promo-counter.model.js";
 import { Profile } from "../profile/profile.model.js";
 import { Like } from "../discovery/like.model.js";
 import { Match } from "../match/match.model.js";
@@ -50,6 +51,19 @@ export async function register(req: Request, res: Response): Promise<void> {
 
     // Create an empty profile linked to this user
     await Profile.create({ owner: user._id, username, isTestAccount });
+
+    // Founding-member launch gift: only real accounts compete for the first 50
+    // slots, so internal/QA test builds don't burn through them beforehand.
+    if (!isTestAccount) {
+        const counter = await PromoCounter.findOneAndUpdate(
+            { _id: 'founding-members' },
+            { $inc: { count: 1 } },
+            { upsert: true, new: true },
+        );
+        if (counter.count <= 50) {
+            await User.findByIdAndUpdate(user._id, { foundingMemberReward: 'pending' });
+        }
+    }
 
     const { accessToken, refreshToken, refreshTokenExpiry } = generateTokenPair(user._id.toString());
     await User.findByIdAndUpdate(user._id, { refreshToken, refreshTokenExpiry });
