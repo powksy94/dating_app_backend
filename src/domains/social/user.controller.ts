@@ -9,6 +9,11 @@ import { Profile } from '../profile/profile.model.js';
 import { notifyAdminsNewReport } from './notify-admins-new-report.js';
 import { Admin } from '../admin/admin.model.js';
 import { inSameTestPool } from '../discovery/test-pool.js';
+import { User } from '../../shared/models/user.model.js';
+import { grantPromotionalEntitlement, revenueCatConfigured } from '../../infrastructure/config/revenuecat.js';
+
+const FOUNDING_MEMBER_GIFT_DAYS = 60;
+const FOUNDING_MEMBER_ENTITLEMENT = 'nocturne';
 
 export async function blockUser(req: AuthRequest, res: Response): Promise<void> {
     const blockerId = new mongoose.Types.ObjectId(req.userId);
@@ -81,6 +86,31 @@ export async function reportUser(req: AuthRequest, res: Response): Promise<void>
 export async function getIsLinkedAdmin(req: AuthRequest, res: Response): Promise<void> {
     const admin = await Admin.findOne({ linkedUserId: req.userId });
     res.json({ isAdmin: !!admin });
+}
+
+export async function claimFoundingMemberReward(req: AuthRequest, res: Response): Promise<void> {
+    const user = await User.findById(req.userId);
+    if (!user) { res.status(404).json({ message: 'User not found' }); return; }
+
+    if (user.foundingMemberReward !== 'pending') {
+        res.status(409).json({ message: 'No founding-member reward to claim' });
+        return;
+    }
+    if (!revenueCatConfigured) {
+        res.status(503).json({ message: 'Reward claiming is currently unavailable' });
+        return;
+    }
+
+    const endTimeMs = Date.now() + FOUNDING_MEMBER_GIFT_DAYS * 24 * 60 * 60 * 1000;
+    const granted = await grantPromotionalEntitlement(req.userId!, FOUNDING_MEMBER_ENTITLEMENT, endTimeMs);
+    if (!granted) {
+        res.status(502).json({ message: 'Reward claim failed, please try again' });
+        return;
+    }
+
+    user.foundingMemberReward = 'claimed';
+    await user.save();
+    res.json({ foundingMemberReward: 'claimed' });
 }
 
 export async function getBlockedIds(userId: string): Promise<string[]> {
