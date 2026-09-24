@@ -4,9 +4,12 @@ import { tokenEncryptionConfigured } from '../../shared/services/token-encryptio
 const clientId     = process.env.DISCORD_CLIENT_ID;
 const clientSecret = process.env.DISCORD_CLIENT_SECRET;
 
-// The redirect URI is fixed and never derived from a request: it must be the
-// exact one registered on Discord's developer portal for this app.
-export const DISCORD_REDIRECT_URI = 'nocturne://oauth-callback';
+// Discord does not accept an arbitrary custom scheme for a mobile redirect: it
+// requires this exact format, built from the app's own id (its OAuth2 Client ID
+// and its Application ID are the same value). Must stay in sync with the
+// scheme declared in AndroidManifest.xml and DiscordOAuthService (app side).
+// See https://docs.discord.com/developers/discord-social-sdk/development-guides/account-linking-on-mobile
+export const DISCORD_REDIRECT_URI = `discord-${clientId}:/authorize/callback`;
 export const DISCORD_SCOPE = 'identify';
 
 if (!clientId || !clientSecret) {
