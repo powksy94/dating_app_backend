@@ -16,6 +16,7 @@
     "migrate-favorite-bands": "tsx src/infrastructure/scripts/migrate-favorite-bands.ts",
     "test-list-reports": "tsx src/infrastructure/scripts/test-list-reports.ts",
     "seed-demo-report": "tsx src/infrastructure/scripts/seed-demo-report.ts",
+    "grant-founding-gift": "tsx src/infrastructure/scripts/grant-founding-gift.ts",
     "lint": "eslint . --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "test": "jest"
