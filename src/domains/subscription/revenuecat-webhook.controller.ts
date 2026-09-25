@@ -2,9 +2,9 @@ import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { User } from '../../shared/models/user.model.js';
 import { logger } from '../../infrastructure/config/logger.js';
+import { periodFromProductId } from '../../infrastructure/config/revenuecat.js';
 
-type Plan   = 'ombre' | 'nocturne' | 'abyssal';
-type Period = 'week' | 'month' | 'year';
+type Plan = 'ombre' | 'nocturne' | 'abyssal';
 
 const VALID_PLANS: Plan[] = ['nocturne', 'abyssal'];
 
@@ -18,14 +18,6 @@ const ACTIVE_EVENTS = new Set([
 // auto-renewal was turned off, access continues until the expiration date,
 // which will trigger EXPIRATION later.
 const EXPIRATION_EVENTS = new Set(['EXPIRATION']);
-
-// Google Play products reach us as "<subscriptionId>:<basePlanId>" (e.g.
-// "nocturne_weekly:weekly"), so the period can't be read from a fixed suffix.
-function periodFromProductId(productId: string | undefined): Period {
-    if (productId?.includes('weekly'))  return 'week';
-    if (productId?.includes('yearly'))  return 'year';
-    return 'month';
-}
 
 export async function revenueCatWebhook(req: Request, res: Response): Promise<void> {
     const expected = `Bearer ${process.env.REVENUECAT_WEBHOOK_SECRET}`;
