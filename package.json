@@ -22,6 +22,7 @@
     "test": "jest"
   },
   "dependencies": {
+    "@aws-sdk/client-rekognition": "^3.1141.0",
     "bcrypt": "^6.0.0",
     "cloudinary": "^2.9.0",
     "cors": "^2.8.5",
