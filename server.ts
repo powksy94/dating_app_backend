@@ -31,6 +31,7 @@ import mobileReportReviewRoutes from './src/domains/social/mobile-report-review.
 import boostRoutes          from './src/domains/subscription/boost.routes.js';
 import visitRoutes          from './src/domains/visit/visit.routes.js';
 import discordOAuthRoutes   from './src/domains/profile/discord-oauth.routes.js';
+import mobilePhotoReviewRoutes from './src/domains/profile/mobile-photo-review.routes.js';
 import { appVersionMiddleware } from './src/shared/middleware/app-version.middleware.js';
 import { apiLimiter } from './src/shared/middleware/rate-limit.middleware.js';
 
@@ -68,6 +69,7 @@ app.use('/api/elegie',       elegieRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/events', eventPaymentRoutes);
 app.use('/api/events/mobile-review', mobileEventReviewRoutes);
+app.use('/api/profile/photos/mobile-review', mobilePhotoReviewRoutes);
 app.use('/api/users',  userRoutes);
 app.use('/api/reports/mobile-review', mobileReportReviewRoutes);
 app.use('/api/boost',  boostRoutes);
