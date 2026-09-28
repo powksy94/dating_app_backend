@@ -1,10 +1,13 @@
 ﻿import { Response } from "express";
 import { Profile } from "./profile.model.js";
 import { User } from "../../shared/models/user.model.js";
+import { PhotoReview } from "../../shared/models/photo-review.model.js";
 import { AuthRequest } from "../../shared/middleware/auth.middleware.js";
 import multer from "multer";
 import cloudinary from "../../infrastructure/config/cloudinary.js";
 import { sanitizeProfileUpdate } from "./profile-validation.js";
+import { MAX_PHOTOS } from "./photo-urls.js";
+import { classifyPhoto } from "../../infrastructure/config/rekognition.js";
 import { reviewBio } from "../social/auto-report.js";
 import { logger } from "../../infrastructure/config/logger.js";
 import { isPushLocale, PushLocale } from "../../shared/services/push-messages.js";
@@ -34,6 +37,17 @@ export async function UptapeMyProfile(req: AuthRequest, res: Response): Promise<
         logger.warn(`Profile update: fields refused for user ${req.userId}: ${rejected.join(', ')}`);
     }
 
+    // A photo still waiting for moderation is never valid input here: only
+    // the upload/review flow may add or approve a photo. Without this, a
+    // client could just replay a pending url it was shown back through this
+    // endpoint to skip moderation entirely.
+    if (Array.isArray(updates.photos)) {
+        const pendingUrls = new Set((await PhotoReview.find({ owner: req.userId }).select('url')).map((p) => p.url));
+        const photos = (updates.photos as string[]).filter((url) => !pendingUrls.has(url));
+        updates.photos = photos;
+        updates.avatarUrl = photos[0] ?? '';
+    }
+
     const profile = await Profile.findOneAndUpdate(
         { owner: req.userId },
         { $set: updates },
@@ -53,6 +67,21 @@ export async function UptapeMyProfile(req: AuthRequest, res: Response): Promise<
 const upload = multer({ storage: multer.memoryStorage() });
 export const uploadMiddleware = upload.array('photos', 6);
 
+function uploadToCloudinary(buffer: Buffer): Promise<{ url: string; publicId: string }> {
+    return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+            { folder: 'nocturne/profiles', resource_type: 'image' },
+            (err, result) => err ? reject(err) : resolve({ url: result!.secure_url, publicId: result!.public_id }),
+        );
+        Readable.from(buffer).pipe(stream);
+    });
+}
+
+// Each photo is classified with AWS Rekognition before it ever reaches
+// Cloudinary: clearly explicit/violent/disturbing content (see rekognition.ts
+// for the exact policy) is rejected outright and never uploaded at all;
+// everything else is uploaded, then either goes straight onto the profile
+// (approve) or into the admin review queue (queue) — never both.
 export async function uploadPhotos(req: AuthRequest, res: Response): Promise<void> {
     const files = req.files as Express.Multer.File[];
     if (!files || files.length === 0) {
@@ -60,24 +89,43 @@ export async function uploadPhotos(req: AuthRequest, res: Response): Promise<voi
         return;
     }
 
-    const urls: string[] = [];
+    const approved: string[] = [];
+    const pending: string[] = [];
+    let rejectedCount = 0;
+
     for (const file of files) {
-        const url = await new Promise<string>((resolve, reject) => {
-            const stream = cloudinary.uploader.upload_stream(
-                { folder: 'nocturne/profiles', resource_type: 'image' },
-                (err, result) => err ? reject(err) : resolve(result!.secure_url)
-            );
-            Readable.from(file.buffer).pipe(stream);
-        });
-        urls.push(url);
+        const { verdict, labels } = await classifyPhoto(file.buffer);
+        if (verdict === 'reject') {
+            rejectedCount++;
+            continue;
+        }
+
+        const { url, publicId } = await uploadToCloudinary(file.buffer);
+        if (verdict === 'approve') {
+            approved.push(url);
+        } else {
+            await PhotoReview.create({ owner: req.userId, url, cloudinaryPublicId: publicId, moderationLabels: labels });
+            pending.push(url);
+        }
     }
 
-    const profile = await Profile.findOneAndUpdate(
-        { owner: req.userId },
-        { $set: { photos: urls, avatarUrl: urls[0] } },
-        { new: true }
-    );
-    res.json({ photos: urls, profile });
+    let profile = await Profile.findOne({ owner: req.userId });
+    if (approved.length) {
+        profile = await Profile.findOneAndUpdate(
+            { owner: req.userId },
+            { $push: { photos: { $each: approved, $slice: -MAX_PHOTOS } } },
+            { new: true },
+        );
+        if (profile && profile.avatarUrl !== profile.photos[0]) {
+            profile = await Profile.findOneAndUpdate(
+                { owner: req.userId },
+                { $set: { avatarUrl: profile.photos[0] ?? '' } },
+                { new: true },
+            );
+        }
+    }
+
+    res.json({ approved, pendingCount: pending.length, rejectedCount, profile });
 }
 
 export async function getProfileByUserId(req: AuthRequest, res: Response): Promise<void> {
