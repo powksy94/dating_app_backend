@@ -19,6 +19,14 @@ export async function getMyProfile(req: AuthRequest, res: Response): Promise<voi
     res.json(profile)
 }
 
+// So the owner isn't left wondering where a just-uploaded photo went: it
+// disappears from Profile.photos entirely while awaiting review, this is
+// the only way for them to see it still exists and is pending.
+export async function getMyPendingPhotos(req: AuthRequest, res: Response): Promise<void> {
+    const reviews = await PhotoReview.find({ owner: req.userId }).select('url createdAt').lean();
+    res.json(reviews.map((r) => ({ url: r.url, createdAt: r.createdAt })));
+}
+
 export async function UptapeMyProfile(req: AuthRequest, res: Response): Promise<void> {
     // Every value is validated (vocabulary, ranges, adult age, favorite bands...),
     // see profile-validation.ts. A value that fails is ignored and the rest is saved.

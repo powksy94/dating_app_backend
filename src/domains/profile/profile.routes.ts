@@ -1,6 +1,6 @@
 ﻿import { Router } from "express";
 import { authMiddleware } from "../../shared/middleware/auth.middleware.js";
-import { getMyProfile, UptapeMyProfile, getProfileByUserId, uploadPhotos, uploadMiddleware, saveFcmToken } from './profile.controller.js';
+import { getMyProfile, UptapeMyProfile, getProfileByUserId, uploadPhotos, uploadMiddleware, saveFcmToken, getMyPendingPhotos } from './profile.controller.js';
 import { searchBands } from './band-search.controller.js';
 
 const router = Router();
@@ -15,6 +15,7 @@ router.use(authMiddleware); // All protected roads below
 router.get('/me',           getMyProfile);
 router.put('/me',           UptapeMyProfile);
 router.post('/photos',      uploadMiddleware, uploadPhotos);
+router.get('/photos/pending', getMyPendingPhotos);
 router.post('/fcm-token',   saveFcmToken);
 router.get('/:userId',      getProfileByUserId);
 
