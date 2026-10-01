@@ -26,6 +26,29 @@ const QUEUE_L1  = new Set(['Non-Explicit Nudity of Intimate parts and Kissing'])
 const REJECT_CONFIDENCE = 90;
 const QUEUE_CONFIDENCE  = 60;
 
+export interface RawModerationLabel {
+    Name?: string;
+    Confidence?: number;
+    ParentName?: string;
+}
+
+/** Pure decision table, kept separate from the AWS call so it can be unit
+ * tested with synthetic labels — there's no way to safely exercise the
+ * reject/queue thresholds with a real upload. Rekognition returns both the
+ * L1 parent and its L2/L3 children; a label whose ParentName is empty/absent
+ * is itself the L1 category, which is the only level this policy looks at. */
+export function decideFromLabels(rawLabels: RawModerationLabel[]): PhotoVerdict {
+    const l1 = rawLabels.filter((l) => !l.ParentName);
+
+    if (l1.some((l) => REJECT_L1.has(l.Name ?? '') && (l.Confidence ?? 0) >= REJECT_CONFIDENCE)) {
+        return 'reject';
+    }
+    if (l1.some((l) => (REJECT_L1.has(l.Name ?? '') || QUEUE_L1.has(l.Name ?? '')) && (l.Confidence ?? 0) >= QUEUE_CONFIDENCE)) {
+        return 'queue';
+    }
+    return 'approve';
+}
+
 /** Classifies a photo with AWS Rekognition's content moderation labels.
  * Fails safe: any error, or Rekognition not configured, sends the photo to
  * the human queue rather than silently skipping moderation. */
@@ -41,17 +64,7 @@ export async function classifyPhoto(buffer: Buffer): Promise<{ verdict: PhotoVer
             .filter((l) => l.Name && l.Confidence !== undefined)
             .map((l) => ({ name: l.Name!, confidence: l.Confidence! }));
 
-        // Rekognition returns both the L1 parent and its L2/L3 children; a
-        // label whose ParentName is empty/absent is itself the L1 category.
-        const l1 = (res.ModerationLabels ?? []).filter((l) => !l.ParentName);
-
-        if (l1.some((l) => REJECT_L1.has(l.Name ?? '') && (l.Confidence ?? 0) >= REJECT_CONFIDENCE)) {
-            return { verdict: 'reject', labels };
-        }
-        if (l1.some((l) => (REJECT_L1.has(l.Name ?? '') || QUEUE_L1.has(l.Name ?? '')) && (l.Confidence ?? 0) >= QUEUE_CONFIDENCE)) {
-            return { verdict: 'queue', labels };
-        }
-        return { verdict: 'approve', labels };
+        return { verdict: decideFromLabels(res.ModerationLabels ?? []), labels };
     } catch (err) {
         logger.error('Rekognition: échec de la classification, la photo part en file de revue', { err });
         return { verdict: 'queue', labels: [] };
