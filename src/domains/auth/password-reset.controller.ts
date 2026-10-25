@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import bcrypt from 'bcrypt';
 import crypto from 'crypto';
 import { User } from "../../shared/models/user.model.js";
-import { PasswordReset } from "../../shared/models/password-reset.model.js";
+import { PasswordReset, IPasswordReset } from "../../shared/models/password-reset.model.js";
 import { sendPasswordResetEmail } from "../../shared/services/mailer.service.js";
 import { logger } from "../../infrastructure/config/logger.js";
 
@@ -20,6 +20,30 @@ function hashCode(userId: string, code: string): string {
 // known email, known email but within the resend cooldown. Any divergence
 // here is an email-enumeration leak, so don't special-case any branch below.
 const GENERIC_ACCEPTED = { message: 'If an account exists for this email, a reset code has been sent.' };
+const INVALID_CODE     = { message: 'Invalid or expired code' };
+
+/** Finds the user's live pending code and checks it against the one
+ * supplied, without consuming it. Shared by verifyResetCode (checks only)
+ * and resetPassword (checks, then atomically consumes on success). On a
+ * wrong guess, increments attempts here so both call sites get the lockout
+ * for free. */
+async function checkCode(userId: string, code: string): Promise<IPasswordReset | null> {
+    const pending = await PasswordReset.findOne({
+        userId, consumedAt: null, expiresAt: { $gt: new Date() },
+    }).sort({ createdAt: -1 });
+
+    if (!pending || pending.attempts >= MAX_ATTEMPTS) return null;
+
+    const expected = Buffer.from(hashCode(userId, code), 'hex');
+    const actual   = Buffer.from(pending.codeHash, 'hex');
+    const matches  = expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
+
+    if (!matches) {
+        await PasswordReset.updateOne({ _id: pending._id }, { $inc: { attempts: 1 } });
+        return null;
+    }
+    return pending;
+}
 
 export async function forgotPassword(req: Request, res: Response): Promise<void> {
     const { email } = req.body as { email?: string };
@@ -60,6 +84,31 @@ export async function forgotPassword(req: Request, res: Response): Promise<void>
     res.status(202).json(GENERIC_ACCEPTED);
 }
 
+/** Lets the UI confirm the code is correct before showing the new-password
+ * step, without consuming it — resetPassword re-checks and consumes it for
+ * real, so a code that expires between the two calls is still rejected. */
+export async function verifyResetCode(req: Request, res: Response): Promise<void> {
+    const { email, code } = req.body as { email?: string; code?: string };
+    if (!email || !code) {
+        res.status(400).json({ message: 'email and code are required' });
+        return;
+    }
+
+    const user = await User.findOne({ email: email.toLowerCase() });
+    if (!user) {
+        res.status(400).json(INVALID_CODE);
+        return;
+    }
+
+    const pending = await checkCode(user._id.toString(), code);
+    if (!pending) {
+        res.status(400).json(INVALID_CODE);
+        return;
+    }
+
+    res.json({ message: 'Code valid' });
+}
+
 export async function resetPassword(req: Request, res: Response): Promise<void> {
     const { email, code, newPassword } = req.body as { email?: string; code?: string; newPassword?: string };
     if (!email || !code || !newPassword) {
@@ -73,26 +122,13 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
 
     const user = await User.findOne({ email: email.toLowerCase() });
     if (!user) {
-        res.status(400).json({ message: 'Invalid or expired code' });
+        res.status(400).json(INVALID_CODE);
         return;
     }
 
-    const pending = await PasswordReset.findOne({
-        userId: user._id, consumedAt: null, expiresAt: { $gt: new Date() },
-    }).sort({ createdAt: -1 });
-
-    if (!pending || pending.attempts >= MAX_ATTEMPTS) {
-        res.status(400).json({ message: 'Invalid or expired code' });
-        return;
-    }
-
-    const expected = Buffer.from(hashCode(user._id.toString(), code), 'hex');
-    const actual   = Buffer.from(pending.codeHash, 'hex');
-    const matches  = expected.length === actual.length && crypto.timingSafeEqual(expected, actual);
-
-    if (!matches) {
-        await PasswordReset.updateOne({ _id: pending._id }, { $inc: { attempts: 1 } });
-        res.status(400).json({ message: 'Invalid or expired code' });
+    const pending = await checkCode(user._id.toString(), code);
+    if (!pending) {
+        res.status(400).json(INVALID_CODE);
         return;
     }
 
@@ -103,7 +139,7 @@ export async function resetPassword(req: Request, res: Response): Promise<void> 
         { $set: { consumedAt: new Date() } },
     );
     if (claim.modifiedCount === 0) {
-        res.status(400).json({ message: 'Invalid or expired code' });
+        res.status(400).json(INVALID_CODE);
         return;
     }
 
