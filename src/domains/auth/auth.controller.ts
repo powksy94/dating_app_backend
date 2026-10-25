@@ -12,6 +12,7 @@ import { Message } from "../chat/message.model.js";
 import { Elegie } from "../elegie/elegie.model.js";
 import { Event } from "../event/event.model.js";
 import { usernameProblem } from "./username-validation.js";
+import { issueVerificationCode } from "./email-verification.controller.js";
 import cloudinary from "../../infrastructure/config/cloudinary.js";
 import type { AuthRequest } from "../../shared/middleware/auth.middleware.js";
 
@@ -49,6 +50,9 @@ export async function register(req: Request, res: Response): Promise<void> {
     const passwordHash = await bcrypt.hash(password, 12);
     const user = await User.create({ email, passwordHash, isTestAccount });
 
+    // Fire-and-forget: never fails registration even if Resend is down.
+    await issueVerificationCode(user);
+
     // Create an empty profile linked to this user
     await Profile.create({ owner: user._id, username, isTestAccount });
 
@@ -68,7 +72,7 @@ export async function register(req: Request, res: Response): Promise<void> {
     const { accessToken, refreshToken, refreshTokenExpiry } = generateTokenPair(user._id.toString());
     await User.findByIdAndUpdate(user._id, { refreshToken, refreshTokenExpiry });
 
-    res.status(201).json({ token: accessToken, refreshToken, userId: user._id });
+    res.status(201).json({ token: accessToken, refreshToken, userId: user._id, emailVerified: false });
 }
 
 export async function login(req: Request, res: Response): Promise<void> {

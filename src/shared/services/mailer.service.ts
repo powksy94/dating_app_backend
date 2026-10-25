@@ -1,5 +1,6 @@
 import { resend, resendConfigured } from "../../infrastructure/config/resend.js";
 import { resetEmailTexts } from "./password-reset-messages.js";
+import { emailVerificationTexts } from "./email-verification-messages.js";
 import type { PushLocale } from "./push-messages.js";
 
 /** Sends the 6-digit reset code by email. Throws if Resend isn't configured
@@ -15,6 +16,28 @@ export async function sendPasswordResetEmail(
         throw new Error('Resend is not configured (RESEND_API_KEY missing)');
     }
     const t = resetEmailTexts(locale);
+    const { error } = await resend.emails.send({
+        from:    process.env.EMAIL_FROM ?? 'Nocturne <noreply@powksy.com>',
+        to,
+        subject: t.subject,
+        html:    t.html(code),
+        text:    t.text(code),
+    });
+    if (error) throw new Error(`Resend error: ${error.message}`);
+}
+
+/** Sends the 6-digit email-confirmation code at registration. Same
+ * fail-loud-to-the-caller contract as sendPasswordResetEmail: the caller
+ * (issueVerificationCode) catches and logs without failing registration. */
+export async function sendEmailVerificationEmail(
+    to: string,
+    code: string,
+    locale: PushLocale | string | undefined,
+): Promise<void> {
+    if (!resendConfigured || !resend) {
+        throw new Error('Resend is not configured (RESEND_API_KEY missing)');
+    }
+    const t = emailVerificationTexts(locale);
     const { error } = await resend.emails.send({
         from:    process.env.EMAIL_FROM ?? 'Nocturne <noreply@powksy.com>',
         to,

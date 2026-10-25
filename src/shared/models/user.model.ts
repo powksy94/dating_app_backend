@@ -28,6 +28,11 @@ export interface IUser extends Document {
      * 'claimed' once the reveal animation's claim call succeeds. Absent for
      * every account outside that window. */
     foundingMemberReward?: 'pending' | 'claimed';
+    /** False until the 6-digit code emailed right after registration is
+     * verified (see email-verification.controller.ts). An account can stay
+     * false forever if the user abandons the flow after register() — that's
+     * fine, it also has no profile in that case, so it's inert either way. */
+    emailVerified: boolean;
 }
 
 const UserSchema = new Schema<IUser>({
@@ -61,6 +66,7 @@ const UserSchema = new Schema<IUser>({
     bannedReason: { type: String },
     isTestAccount: { type: Boolean, default: false },
     foundingMemberReward: { type: String, enum: ['pending', 'claimed'] },
+    emailVerified: { type: Boolean, default: false },
 }, { timestamps: true });
 
 export const User = mongoose.model<IUser>('User', UserSchema);

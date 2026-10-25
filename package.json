@@ -14,6 +14,7 @@
     "link-existing-admins": "tsx src/infrastructure/scripts/link-existing-admins.ts",
     "migrate-gender-vocabulary": "tsx src/infrastructure/scripts/migrate-gender-vocabulary.ts",
     "migrate-favorite-bands": "tsx src/infrastructure/scripts/migrate-favorite-bands.ts",
+    "migrate-mark-existing-emails-verified": "tsx src/infrastructure/scripts/migrate-mark-existing-emails-verified.ts",
     "test-list-reports": "tsx src/infrastructure/scripts/test-list-reports.ts",
     "seed-demo-report": "tsx src/infrastructure/scripts/seed-demo-report.ts",
     "grant-founding-gift": "tsx src/infrastructure/scripts/grant-founding-gift.ts",
