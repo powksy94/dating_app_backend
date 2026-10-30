@@ -16,6 +16,9 @@ export interface IReport extends Document {
     /** The message's text, captured at report time so it survives the
      * message later being deleted (for either side or for all). */
     messageSnapshot?: string;
+    /** "pending": awaiting admin review. "dismissed": reviewed, no action.
+     * "actioned": reviewed, the reported user was banned. */
+    status: 'pending' | 'dismissed' | 'actioned';
 }
 
 const ReportSchema = new Schema<IReport>({
@@ -26,6 +29,7 @@ const ReportSchema = new Schema<IReport>({
     topic:    { type: String },
     messageId:       { type: Schema.Types.ObjectId, ref: 'Message' },
     messageSnapshot: { type: String },
+    status: { type: String, enum: ['pending', 'dismissed', 'actioned'], default: 'pending' },
 }, { timestamps: true });
 
 export const Report = mongoose.model<IReport>('Report', ReportSchema);

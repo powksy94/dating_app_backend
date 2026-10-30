@@ -8,6 +8,8 @@ interface PushTexts {
     newMessage:      string;
     photo:           string;
     reportTitle:     string;
+    reportActionedTitle: string;
+    reportActionedBody:  string;
     eventTitle:      string;
     adminAuthTitle:  string;
     adminAuthBody:   string;
@@ -22,6 +24,8 @@ const fr: PushTexts = {
     newMessage:     'Nouveau message',
     photo:          '📷 Photo',
     reportTitle:    '🚩 Signalement à traiter',
+    reportActionedTitle: '🛡️ Signalement traité',
+    reportActionedBody:  'Le compte que tu as signalé a été banni. Merci d\'avoir contribué à la sécurité de Nocturne.',
     eventTitle:     '📋 Évènement à valider',
     adminAuthTitle: '🔐 Connexion admin',
     adminAuthBody:  'Demande de connexion au panel admin. Approuves-tu ?',
@@ -36,6 +40,8 @@ const en: PushTexts = {
     newMessage:     'New message',
     photo:          '📷 Photo',
     reportTitle:    '🚩 Report to review',
+    reportActionedTitle: '🛡️ Report resolved',
+    reportActionedBody:  'The account you reported was banned. Thanks for helping keep Nocturne safe.',
     eventTitle:     '📋 Event to review',
     adminAuthTitle: '🔐 Admin login',
     adminAuthBody:  'Admin panel login request. Do you approve?',

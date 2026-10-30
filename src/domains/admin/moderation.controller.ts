@@ -3,12 +3,13 @@ import mongoose from 'mongoose';
 import { Report } from '../social/report.model.js';
 import { User } from '../../shared/models/user.model.js';
 import { Profile } from '../profile/profile.model.js';
+import { notifyReportersActioned } from '../social/report-notifications.js';
 
 // Typed as plain Request (not AdminRequest) so these handlers can be reused
 // both by the web-admin router (admin JWT) and the mobile linked-admin
 // router (regular mobile session) — neither needs the admin-specific fields.
 export async function listReports(_req: Request, res: Response): Promise<void> {
-    const reports = await Report.find().sort({ createdAt: -1 }).limit(200).lean();
+    const reports = await Report.find({ status: 'pending' }).sort({ createdAt: -1 }).limit(200).lean();
 
     // An automatic report has no reporter, only the reported user.
     const userIds = [...new Set(reports.flatMap(r =>
@@ -49,7 +50,7 @@ export async function dismissReport(req: Request, res: Response): Promise<void> 
         res.status(400).json({ message: 'Invalid report id' });
         return;
     }
-    await Report.findByIdAndDelete(req.params.id);
+    await Report.findByIdAndUpdate(req.params.id, { status: 'dismissed' });
     res.json({ message: 'Report dismissed' });
 }
 
@@ -69,6 +70,18 @@ export async function banUser(req: Request, res: Response): Promise<void> {
     }, { new: true });
 
     if (!user) { res.status(404).json({ message: 'User not found' }); return; }
+
+    // A ban resolves every pending report against this account, not just the
+    // one that prompted it from the admin UI (the client never sends a
+    // reportId — see report_review_actions.dart).
+    const pendingReports = await Report.find({ reported: user._id, status: 'pending' }).select('reporter');
+    await Report.updateMany({ reported: user._id, status: 'pending' }, { status: 'actioned' });
+
+    const reporterIds = [...new Set(
+        pendingReports.map(r => r.reporter?.toString()).filter((id): id is string => Boolean(id))
+    )];
+    notifyReportersActioned(reporterIds).catch(() => {});
+
     res.json({ message: 'User banned' });
 }
 

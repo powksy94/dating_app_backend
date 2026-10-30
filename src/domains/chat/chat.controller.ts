@@ -1,6 +1,7 @@
 ﻿import { Response } from "express";
 import { Message } from "./message.model.js";
 import { Match } from "../match/match.model.js";
+import { Report } from "../social/report.model.js";
 import { User } from "../../shared/models/user.model.js";
 import { Profile } from "../profile/profile.model.js";
 import { AuthRequest } from "../../shared/middleware/auth.middleware.js";
@@ -34,7 +35,18 @@ export async function getMessages(req: AuthRequest, res: Response): Promise<void
         matchId:    req.params.matchId,
         deletedFor: { $ne: userId },
     }).sort({ createdAt: 1 }).select('-deletedFor').lean();
-    res.json(messages);
+
+    const pendingReports = await Report.find({
+        reporter:  userId,
+        messageId: { $in: messages.map(m => m._id) },
+        status:    'pending',
+    }).select('messageId').lean();
+    const reportedIds = new Set(pendingReports.map(r => r.messageId!.toString()));
+
+    res.json(messages.map(m => ({
+        ...m,
+        reportedByMe: reportedIds.has(m._id.toString()),
+    })));
 }
 
 export async function sendMessage(req: AuthRequest, res: Response): Promise<void> {
