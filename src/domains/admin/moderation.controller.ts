@@ -25,6 +25,7 @@ export async function listReports(_req: Request, res: Response): Promise<void> {
         id:       r._id,
         reason:   r.reason,
         createdAt: (r as any).createdAt,
+        messageSnapshot: r.messageSnapshot ?? null,
         // The review screens show this name, so an automatic report reads as such.
         // isTestAccount lets the review screen flag noise from testing, without
         // hiding it: a test account can be the only kind that exists pre-launch.

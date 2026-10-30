@@ -4,6 +4,7 @@ import type { AuthRequest } from '../../shared/middleware/auth.middleware.js';
 import { Block } from './block.model.js';
 import { Report } from './report.model.js';
 import { Match } from '../match/match.model.js';
+import { Message } from '../chat/message.model.js';
 import { Like } from '../discovery/like.model.js';
 import { Profile } from '../profile/profile.model.js';
 import { notifyAdminsNewReport } from './notify-admins-new-report.js';
@@ -56,7 +57,7 @@ export async function reportUser(req: AuthRequest, res: Response): Promise<void>
     const reporterId = new mongoose.Types.ObjectId(req.userId);
     const targetId   = req.params['id'] as string;
     const reportedId = new mongoose.Types.ObjectId(targetId);
-    const { reason } = req.body as { reason: string };
+    const { reason, messageId } = req.body as { reason: string; messageId?: string };
 
     if (!reason?.trim()) {
         res.status(400).json({ message: 'A reason is required' });
@@ -71,10 +72,29 @@ export async function reportUser(req: AuthRequest, res: Response): Promise<void>
         return;
     }
 
+    // Reporting a specific message: only accept a message that's actually
+    // part of a conversation between these two accounts, and sent by the
+    // one being reported — otherwise a direct call could attach an unrelated
+    // message as fake evidence. The text is copied onto the report itself so
+    // it survives the message later being deleted.
+    let messageSnapshot: string | undefined;
+    if (messageId) {
+        const match = await Match.findOne({ users: { $all: [reporterId, reportedId] } }).select('_id');
+        const message = match
+            ? await Message.findOne({ _id: messageId, matchId: match._id, sender: reportedId })
+            : null;
+        if (!message) {
+            res.status(400).json({ message: 'Invalid message' });
+            return;
+        }
+        messageSnapshot = message.text;
+    }
+
     await Report.create({
         reporter: reporterId,
         reported: reportedId,
         reason:   reason.trim(),
+        ...(messageId ? { messageId, messageSnapshot } : {}),
     });
 
     const reportedProfile = await Profile.findOne({ owner: reportedId }).select('username');
