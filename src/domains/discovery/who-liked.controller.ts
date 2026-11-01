@@ -22,20 +22,34 @@ export async function whoLikedMe(req: AuthRequest, res: Response): Promise<void>
         return;
     }
 
+    // Same age window the swipe feed applies (see swipe-feed.controller.ts),
+    // so this list can't be used to see past a range the user chose not to see.
+    const me     = await Profile.findOne({ owner: userId }).select('ageMin ageMax');
+    const ageMin = me?.ageMin ?? 18;
+    const ageMax = me?.ageMax ?? 99;
+
     const likes = await Like.find({ to: userId }).sort({ createdAt: -1 });
 
-    const result = await Promise.all(likes.map(async (like) => {
-        const profile = await Profile.findOne({ owner: like.from }, { username: 1, avatarUrl: 1, age: 1 });
+    const rows = await Promise.all(likes.map(async (like) => {
+        const profile = await Profile.findOne({ owner: like.from }, { username: 1, avatarUrl: 1, age: 1, birthDate: 1 });
+
+        // Computed from birthDate like the swipe feed; a profile with neither
+        // birthDate nor the legacy age field is "unknown age" and kept, not excluded.
+        const age = profile?.birthDate
+            ? Math.floor((Date.now() - profile.birthDate.getTime()) / 31557600000)
+            : profile?.age ?? null;
+        if (age !== null && (age < ageMin || age > ageMax)) return null;
+
         const isMatch = await Match.exists({ users: { $all: [userId, like.from] } });
         return {
             uid:       like.from,
             username:  profile?.username ?? 'Unknown user',
             avatarUrl: profile?.avatarUrl ?? '',
-            age:       profile?.age ?? null,
+            age,
             isMatch:   !!isMatch,
             likedAt:   (like as any).createdAt,
         };
     }));
 
-    res.json(result);
+    res.json(rows.filter((r): r is NonNullable<typeof r> => r !== null));
 }
