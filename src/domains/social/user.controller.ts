@@ -128,7 +128,13 @@ export async function claimFoundingMemberReward(req: AuthRequest, res: Response)
         return;
     }
 
+    // Feature gating (swipe limits, boosts, etc. — see subscription/limits.ts)
+    // reads subscriptionPlan straight from Mongo, not RevenueCat: a real
+    // purchase sets it via subscribe()/the webhook, so the promotional grant
+    // has to set it here too, or the perk stays invisible to the rest of the app.
     user.foundingMemberReward = 'claimed';
+    user.subscriptionPlan   = FOUNDING_MEMBER_ENTITLEMENT;
+    user.subscriptionPeriod = 'month';
     await user.save();
     res.json({ foundingMemberReward: 'claimed' });
 }
