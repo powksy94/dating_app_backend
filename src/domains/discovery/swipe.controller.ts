@@ -9,7 +9,7 @@ import { User, IUser } from "../../shared/models/user.model.js";
 import { AuthRequest } from "../../shared/middleware/auth.middleware.js";
 import { notifyMatch } from "../match/notify-match.js";
 import { getBlockedIds } from "../social/user.controller.js";
-import { inSameTestPool } from "./test-pool.js";
+import { canInteract } from "./test-pool.js";
 import { PLAN_LIMITS, Plan, todayStr } from "../subscription/limits.js";
 import mongoose from "mongoose";
 
@@ -38,9 +38,10 @@ export async function likeUser(req: AuthRequest, res: Response): Promise<void> {
         return;
     }
 
-    // The feed already keeps test and real accounts apart, but the target id
-    // comes straight from the client: re-check here so a direct call can't cross.
-    if (!await inSameTestPool(fromId.toString(), toId.toString())) {
+    // The feed already keeps test/real accounts and admin-linked accounts
+    // apart, but the target id comes straight from the client: re-check here
+    // so a direct call can't cross.
+    if (!await canInteract(fromId.toString(), toId.toString())) {
         res.status(403).json({ message: 'Profile not found' });
         return;
     }
@@ -82,7 +83,7 @@ export async function dislikeUser(req: AuthRequest, res: Response): Promise<void
     const userId = new mongoose.Types.ObjectId(req.userId);
     const toId   = new mongoose.Types.ObjectId(req.params.targetId as string);
 
-    if (!await inSameTestPool(userId.toString(), toId.toString())) {
+    if (!await canInteract(userId.toString(), toId.toString())) {
         res.status(403).json({ message: 'Profile not found' });
         return;
     }

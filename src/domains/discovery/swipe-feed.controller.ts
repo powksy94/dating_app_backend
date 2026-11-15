@@ -3,6 +3,7 @@ import mongoose from "mongoose";
 import { Like } from "./like.model.js";
 import { Pass } from "./pass.model.js";
 import { Profile } from "../profile/profile.model.js";
+import { Admin } from "../admin/admin.model.js";
 import { AuthRequest } from "../../shared/middleware/auth.middleware.js";
 import { getBlockedIds } from "../social/user.controller.js";
 
@@ -23,6 +24,16 @@ export async function fecthSwipeProfiles(req: AuthRequest, res: Response): Promi
             isTestAccount: Boolean(me?.isTestAccount),
         } },
     ];
+
+    // Among real (non-test) accounts: an account linked to an Admin doc
+    // never shows up for, or sees, a real user (see test-pool.ts canInteract).
+    if (!me?.isTestAccount) {
+        const adminLinkedIds = await Admin.find({ linkedUserId: { $exists: true } }).distinct('linkedUserId');
+        const meIsAdminLinked = adminLinkedIds.some((id) => id.equals(userId));
+        pipeline.push({ $match: {
+            owner: meIsAdminLinked ? { $in: adminLinkedIds } : { $nin: adminLinkedIds },
+        } });
+    }
 
     // Gender sought: only filters if the user has expressed a preference.
     if (me?.genderPreferences?.length) {
