@@ -20,8 +20,15 @@ export type PhotoVerdict = 'approve' | 'queue' | 'reject';
 // Only the categories relevant to a dating-profile photo: nudity and
 // disturbing/violent content. Swimwear, alcohol, gambling etc. are normal
 // dating-app content and never flagged.
-const REJECT_L1 = new Set(['Explicit', 'Violence', 'Visually Disturbing']);
-const QUEUE_L1  = new Set(['Non-Explicit Nudity of Intimate parts and Kissing']);
+//
+// "Visually Disturbing" never auto-rejects: it's the broadest, most
+// aesthetic-sensitive category, and this audience's styling (corpse paint,
+// fake blood, theatrical contacts, prosthetics) is exactly what it tends to
+// misfire on. A confident false positive here would silently delete the
+// photo with no human ever seeing it (see profile.controller.ts) — queued
+// for review instead, same as borderline nudity.
+const REJECT_L1 = new Set(['Explicit', 'Violence']);
+const QUEUE_L1  = new Set(['Non-Explicit Nudity of Intimate parts and Kissing', 'Visually Disturbing']);
 
 const REJECT_CONFIDENCE = 90;
 const QUEUE_CONFIDENCE  = 60;

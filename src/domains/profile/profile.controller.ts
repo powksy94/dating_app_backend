@@ -105,6 +105,10 @@ export async function uploadPhotos(req: AuthRequest, res: Response): Promise<voi
         const { verdict, labels } = await classifyPhoto(file.buffer);
         if (verdict === 'reject') {
             rejectedCount++;
+            // The photo itself is never kept (see classifyPhoto's doc comment on
+            // REJECT_L1): without this, a confident false positive leaves no
+            // trace at all to audit or tune the policy against later.
+            logger.warn(`Photo rejetée pour ${req.userId}: ${JSON.stringify(labels)}`);
             continue;
         }
 
