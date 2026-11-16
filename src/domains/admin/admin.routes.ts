@@ -1,12 +1,16 @@
 ﻿import { Router } from "express";
 import { adminLogin, getStats } from "./admin.controller.js";
 import { listReports, dismissReport, banUser, unbanUser } from "./moderation.controller.js";
+import { getMetricHistory } from "./stats/metric-history.controller.js";
+import { getProfileDemographics } from "./stats/profile-demographics.controller.js";
 import { adminMiddleware } from "../../shared/middleware/admin.middleware.js";
 
 const router = Router();
 
 router.post('/login', adminLogin);
 router.get('/stats', adminMiddleware, getStats);
+router.get('/stats/profiles/demographics',  adminMiddleware, getProfileDemographics);
+router.get('/stats/:metric/history',        adminMiddleware, getMetricHistory)
 
 router.get('/reports',                adminMiddleware, listReports);
 router.delete('/reports/:id',         adminMiddleware, dismissReport);
