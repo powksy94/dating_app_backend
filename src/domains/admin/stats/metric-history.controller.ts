@@ -5,6 +5,7 @@ import { Like } from "../../discovery/like.model.js";
 import { Match } from "../../match/match.model.js";
 import { Message } from "../../chat/message.model.js";
 import { dailyHistory } from "./daily-history.js";
+import { realAccountsFilters, StatsMetric } from "./real-accounts-filter.js";
 
 const MODELS = {
     users:      User,
@@ -35,7 +36,8 @@ export async function getMetricHistory(req: Request, res: Response): Promise<voi
 
     const days =    clampDays(req.query.days);
     const model =   MODELS[metric as keyof typeof MODELS];
-    const { total, history } = await dailyHistory(model, days);
+    const filters = await realAccountsFilters();
+    const { total, history } = await dailyHistory(model, days, filters[metric as StatsMetric]);
     
     res.json({ metric, days, total, history });
 }
