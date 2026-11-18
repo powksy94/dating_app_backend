@@ -8,6 +8,7 @@ import { Like } from "../discovery/like.model.js";
 import { Match } from "../match/match.model.js";
 import { Message } from "../chat/message.model.js";
 import { logger } from "../../infrastructure/config/logger.js";
+import { realAccountsFilters, MongoFilter } from "./stats/real-accounts-filter.js";
 
 export async function adminLogin(req: Request, res: Response): Promise<void> {
     const { email, password } = req.body;
@@ -40,8 +41,8 @@ export async function adminLogin(req: Request, res: Response): Promise<void> {
     res.json({ token, adminId: admin._id });
 }
 
-const HISTORY_PIPELINE = (since: Date) => [
-    { $match: { createdAt: { $gte: since } } },
+const HISTORY_PIPELINE = (since: Date, filter: MongoFilter) => [
+    { $match: { ...filter, createdAt: { $gte: since } } },
     { $group: {
         _id:   { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: 'Europe/Paris' } },
         value: { $sum: 1 },
@@ -70,6 +71,13 @@ export async function getStats(_req: Request, res: Response): Promise<void> {
     const d30 = new Date(now.getTime() - 30 * 86_400_000);
     const d60 = new Date(now.getTime() - 60 * 86_400_000);
 
+    const filters = await realAccountsFilters();
+
+    // Adds the createdAt range on top of a metric's real-accounts filter —
+    // avoids repeating { ...filter, createdAt: {...} } at every call site below.
+    const last30 = (filter: MongoFilter) => ({ ...filter, createdAt: { $gte: d30 } });
+    const prev30 = (filter: MongoFilter) => ({ ...filter, createdAt: { $gte: d60, $lt: d30 } });
+
     const [
         users, profiles, likes, matches, messages,
         usersLast30,   usersPrev30,
@@ -78,23 +86,23 @@ export async function getStats(_req: Request, res: Response): Promise<void> {
         messagesLast30, messagesPrev30,
         usersHist, likesHist, matchesHist, messagesHist,
     ] = await Promise.all([
-        User.countDocuments(),
-        Profile.countDocuments(),
-        Like.countDocuments(),
-        Match.countDocuments(),
-        Message.countDocuments(),
-        User.countDocuments({ createdAt: { $gte: d30 } }),
-        User.countDocuments({ createdAt: { $gte: d60, $lt: d30 } }),
-        Like.countDocuments({ createdAt: { $gte: d30 } }),
-        Like.countDocuments({ createdAt: { $gte: d60, $lt: d30 } }),
-        Match.countDocuments({ createdAt: { $gte: d30 } }),
-        Match.countDocuments({ createdAt: { $gte: d60, $lt: d30 } }),
-        Message.countDocuments({ createdAt: { $gte: d30 } }),
-        Message.countDocuments({ createdAt: { $gte: d60, $lt: d30 } }),
-        User.aggregate(HISTORY_PIPELINE(d7)),
-        Like.aggregate(HISTORY_PIPELINE(d7)),
-        Match.aggregate(HISTORY_PIPELINE(d7)),
-        Message.aggregate(HISTORY_PIPELINE(d7)),
+        User.countDocuments(filters.users),
+        Profile.countDocuments(filters.profiles),
+        Like.countDocuments(filters.likes),
+        Match.countDocuments(filters.matches),
+        Message.countDocuments(filters.messages),
+        User.countDocuments(last30(filters.users )),
+        User.countDocuments(prev30(filters.users )),
+        Like.countDocuments(last30(filters.likes )),
+        Like.countDocuments(prev30(filters.likes )),
+        Match.countDocuments(last30(filters.matches )),
+        Match.countDocuments(prev30(filters.matches )),
+        Message.countDocuments(last30(filters.messages )),
+        Message.countDocuments(prev30(filters.messages )),
+        User.aggregate(HISTORY_PIPELINE(d7, filters.users)),
+        Like.aggregate(HISTORY_PIPELINE(d7, filters.likes)),
+        Match.aggregate(HISTORY_PIPELINE(d7, filters.matches)),
+        Message.aggregate(HISTORY_PIPELINE(d7, filters.messages)),
     ]);
 
     function trend(current: number, prev: number, hist: { date: string; value: number }[], label = 'ce mois') {
