@@ -1,4 +1,5 @@
 import mongoose from "mongoose";
+import { MongoFilter } from "./real-accounts-filter.js";
 
 export interface HistoryPoint {
     date:       string;
@@ -26,14 +27,15 @@ function parisDateKey(date: Date): string {
 export async function dailyHistory(
     model: mongoose.Model<any>,
     days: number,
+    filter: MongoFilter = {},
 ): Promise<DailyHistoryResult> {
     const now   = new Date();
     const since = new Date(now.getTime() - days * DAY_MS);
 
     const [total, rows] = await Promise.all([
-        model.countDocuments(),
+        model.countDocuments(filter),
         model.aggregate([
-            { $match: { createdAt: { $gte: since} } },
+            { $match: { ...filter, createdAt: { $gte: since} } },
             { $group: {
                 _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: 'Europe/Paris' } },
                 value: { $sum: 1 },
