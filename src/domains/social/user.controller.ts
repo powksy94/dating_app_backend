@@ -112,7 +112,11 @@ export async function claimFoundingMemberReward(req: AuthRequest, res: Response)
     const user = await User.findById(req.userId);
     if (!user) { res.status(404).json({ message: 'User not found' }); return; }
 
-    if (user.foundingMemberReward !== 'pending') {
+    // Belt and suspenders: register() already never sets foundingMemberReward
+    // for a test account (see auth.controller.ts), but a test account used
+    // for QA (via the grant-founding-gift.ts script) must still never be
+    // able to burn a real RevenueCat promotional grant.
+    if (user.isTestAccount || user.foundingMemberReward !== 'pending') {
         res.status(409).json({ message: 'No founding-member reward to claim' });
         return;
     }
