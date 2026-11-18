@@ -4,6 +4,7 @@ import { countBy } from "./count-by.js";
 import { keepTopSlices } from "./top-slices.js";
 import { ageBracketOf, AGE_BRACKETS_ORDER } from "./age-brackets.js";
 import { countryOf, UNKNOWN_COUNTRY } from "./country-of.js";
+import { NOT_TEST_ACCOUNT } from "./real-accounts-filter.js";
 
 const COUNTRY_TOP_LIMIT     = 8;
 const OTHER_COUNTRIES_LABEL = 'Autres pays';
@@ -20,7 +21,7 @@ export async function getProfileDemographics(_req: Request, res: Response): Prom
     // Only what's needed to bucket by age and country — nothing identifying
     // ever leaves the database; the response is aggregated counts only.
     const profiles = await Profile.find(
-        { isTestAccount: false },
+        NOT_TEST_ACCOUNT,
         { birthDate: 1, age: 1, location: 1, _id: 0 },
     ).lean();
 
