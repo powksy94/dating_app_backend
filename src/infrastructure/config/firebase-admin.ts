@@ -1,4 +1,4 @@
-import admin from 'firebase-admin';
+import { cert, getApps, initializeApp, ServiceAccount } from 'firebase-admin/app';
 import { readFileSync } from 'fs';
 import { join, dirname } from 'path';
 import { fileURLToPath } from 'url';
@@ -14,10 +14,11 @@ if (process.env.FIREBASE_SERVICE_ACCOUNT) {
     serviceAccount  = JSON.parse(readFileSync(keyPath, 'utf-8'));
 }
 
-if (!admin.apps.length) {
-    admin.initializeApp({
-        credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
+// Side-effect only: registers the default app. getAppCheck()/getMessaging()
+// (see app-check.middleware.ts, notification.service.ts) use it automatically
+// as long as this module has been imported first.
+if (!getApps().length) {
+    initializeApp({
+        credential: cert(serviceAccount as ServiceAccount),
     });
 }
-
-export default admin;

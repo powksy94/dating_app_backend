@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
-import admin from '../../infrastructure/config/firebase-admin.js';
+import { getAppCheck } from 'firebase-admin/app-check';
+import '../../infrastructure/config/firebase-admin.js';
 import { logger } from '../../infrastructure/config/logger.js';
 
 // Escape hatch for local/dev/CI where no App Check debug token is configured.
@@ -23,7 +24,7 @@ export async function appCheckMiddleware(req: Request, res: Response, next: Next
     }
 
     try {
-        await admin.appCheck().verifyToken(token);
+        await getAppCheck().verifyToken(token);
         next();
     } catch (err) {
         logger.warn('App Check: jeton invalide ou rejeté', { err });

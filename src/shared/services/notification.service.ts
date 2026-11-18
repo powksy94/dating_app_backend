@@ -1,4 +1,5 @@
-﻿import admin from '../../infrastructure/config/firebase-admin.js';
+﻿import { getMessaging } from 'firebase-admin/messaging';
+import '../../infrastructure/config/firebase-admin.js';
 
 export async function sendPushNotification(
     fcmToken:  string,
@@ -7,7 +8,7 @@ export async function sendPushNotification(
     data:      Record<string, string> = {},
 ): Promise<void> {
     try {
-        await admin.messaging().send({
+        await getMessaging().send({
             token: fcmToken,
             notification: { title, body },
             data,
