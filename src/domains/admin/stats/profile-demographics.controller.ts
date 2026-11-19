@@ -5,7 +5,7 @@ import { keepTopSlices } from "./top-slices.js";
 import { ageBracketOf, AGE_BRACKETS_ORDER } from "./age-brackets.js";
 import { countryOf, UNKNOWN_COUNTRY } from "./country-of.js";
 import { NOT_TEST_ACCOUNT, MongoFilter } from "./real-accounts-filter.js";
-import { parsePeriod } from "./period.js";
+import { parsePeriod, type Period } from "./period.js";
 
 const COUNTRY_TOP_LIMIT     = 8;
 const OTHER_COUNTRIES_LABEL = 'Autres pays';
@@ -20,7 +20,9 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const UNDERAGE_BRACKET = AGE_BRACKETS_ORDER[0];
 
 export async function getProfileDemographics(req: Request, res: Response): Promise<void> {
-    const period = parsePeriod(req.query.days);
+    // No days parameter means the whole base, as before periods existed;
+    // an invalid value still falls back to parsePeriod's default.
+    const period: Period = req.query.days === undefined ? 'all' : parsePeriod(req.query.days);
     const filter: MongoFilter = period === 'all'
         ? NOT_TEST_ACCOUNT
         : { ...NOT_TEST_ACCOUNT, createdAt: { $gte: new Date(Date.now() - period * DAY_MS) } };
