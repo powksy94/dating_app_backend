@@ -4,10 +4,12 @@ import { countBy } from "./count-by.js";
 import { keepTopSlices } from "./top-slices.js";
 import { ageBracketOf, AGE_BRACKETS_ORDER } from "./age-brackets.js";
 import { countryOf, UNKNOWN_COUNTRY } from "./country-of.js";
-import { NOT_TEST_ACCOUNT } from "./real-accounts-filter.js";
+import { NOT_TEST_ACCOUNT, MongoFilter } from "./real-accounts-filter.js";
+import { parsePeriod } from "./period.js";
 
 const COUNTRY_TOP_LIMIT     = 8;
 const OTHER_COUNTRIES_LABEL = 'Autres pays';
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 // Should never be non-empty — validateBirthDate (profile-validation.ts)
 // already refuses any age under 18 at signup and on every profile update.
@@ -17,11 +19,16 @@ const OTHER_COUNTRIES_LABEL = 'Autres pays';
 // AGE_BRACKET_ORDER[0] is always this bracket — see age-brackets.ts's BRACKETS.
 const UNDERAGE_BRACKET = AGE_BRACKETS_ORDER[0];
 
-export async function getProfileDemographics(_req: Request, res: Response): Promise<void> {
+export async function getProfileDemographics(req: Request, res: Response): Promise<void> {
+    const period = parsePeriod(req.query.days);
+    const filter: MongoFilter = period === 'all'
+        ? NOT_TEST_ACCOUNT
+        : { ...NOT_TEST_ACCOUNT, createdAt: { $gte: new Date(Date.now() - period * DAY_MS) } };
+
     // Only what's needed to bucket by age and country — nothing identifying
     // ever leaves the database; the response is aggregated counts only.
     const profiles = await Profile.find(
-        NOT_TEST_ACCOUNT,
+        filter,
         { birthDate: 1, age: 1, location: 1, _id: 0 },
     ).lean();
 
