@@ -6,6 +6,8 @@ import { Match } from "../../match/match.model.js";
 import { Message } from "../../chat/message.model.js";
 import { dailyHistory } from "./daily-history.js";
 import { realAccountsFilters, StatsMetric } from "./real-accounts-filter.js";
+import { parsePeriod } from "./period.js";
+import { daysSinceLaunch } from "./app-launch.js";
 
 const MODELS = {
     users:      User,
@@ -14,16 +16,6 @@ const MODELS = {
     matches:    Match,
     messages:   Message,
 };
-
-const DEFAULT_DAYS  = 30;
-const MIN_DAYS      = 7;
-const MAX_DAYS      = 90;
-
-function clampDays(raw: unknown): number {
-    const parsed = Number(raw);
-    if (!Number.isInteger(parsed)) return DEFAULT_DAYS;
-    return Math.min(Math.max(parsed, MIN_DAYS), MAX_DAYS);
-}
 
 export async function getMetricHistory(req: Request, res: Response): Promise<void> {
     const metric = req.params.metric as string;
@@ -34,7 +26,8 @@ export async function getMetricHistory(req: Request, res: Response): Promise<voi
         return;
     }
 
-    const days =    clampDays(req.query.days);
+    const period = parsePeriod(req.query.days);
+    const days =   period === 'all' ? await daysSinceLaunch() : period;
     const model =   MODELS[metric as keyof typeof MODELS];
     const filters = await realAccountsFilters();
     const { total, history } = await dailyHistory(model, days, filters[metric as StatsMetric]);
