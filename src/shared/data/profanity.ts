@@ -10,6 +10,9 @@ import { franc } from 'franc';
 interface WordLists {
     en: string[];
     fr: string[];
+    es: string[];
+    pt: string[];
+    de: string[];
 }
 const lists = JSON.parse(
     readFileSync(new URL('./profanity-words.json', import.meta.url), 'utf-8'),
@@ -19,6 +22,9 @@ const lists = JSON.parse(
 const LANG_CODES: Record<keyof WordLists, string> = {
     en: 'eng',
     fr: 'fra',
+    es: 'spa',
+    pt: 'por',
+    de: 'deu',
 };
 
 // Leet-speak conversion, identical to safe_text: "n4zi" is read as "nazi".
@@ -65,7 +71,7 @@ const ALL_WORDS = buildWordList(SUPPORTED_LANGS.flatMap((key) => lists[key]));
 // language-aware check existed, rather than guessing wrong and either
 // over- or under-filtering.
 function wordsForText(text: string): string[] {
-    const detected = franc(text, { minLength: 10 });
+    const detected = franc(text, { minLength: 10, only: Object.values(LANG_CODES) });
     if (detected === 'und') return ALL_WORDS;
     return WORDS_BY_LANG[detected] ?? [];
 }
