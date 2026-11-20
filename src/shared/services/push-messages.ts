@@ -47,9 +47,57 @@ const en: PushTexts = {
     adminAuthBody:  'Admin panel login request. Do you approve?',
 };
 
+const es: PushTexts = {
+    newMatchTitle:  '🖤 ¡Nuevo match!',
+    newMatchBody:   (username) => `Has hecho match con ${username}`,
+    someone:        'alguien',
+    newElegyTitle:  '✉️ Nueva elegía',
+    newElegyBody:   (username) => `${username} te ha enviado una elegía`,
+    newMessage:     'Nuevo mensaje',
+    photo:          '📷 Foto',
+    reportTitle:    '🚩 Denuncia por gestionar',
+    reportActionedTitle: '🛡️ Denuncia resuelta',
+    reportActionedBody:  'La cuenta que denunciaste ha sido baneada. Gracias por ayudar a mantener Nocturne seguro.',
+    eventTitle:     '📋 Evento por validar',
+    adminAuthTitle: '🔐 Inicio de sesión admin',
+    adminAuthBody:  'Solicitud de inicio de sesión al panel admin. ¿Apruebas?',
+};
+
+const pt: PushTexts = {
+    newMatchTitle:  '🖤 Novo match!',
+    newMatchBody:   (username) => `Você deu match com ${username}`,
+    someone:        'alguém',
+    newElegyTitle:  '✉️ Nova elegia',
+    newElegyBody:   (username) => `${username} te enviou uma elegia`,
+    newMessage:     'Nova mensagem',
+    photo:          '📷 Foto',
+    reportTitle:    '🚩 Denúncia para tratar',
+    reportActionedTitle: '🛡️ Denúncia tratada',
+    reportActionedBody:  'A conta que você denunciou foi banida. Obrigado por ajudar a manter o Nocturne seguro.',
+    eventTitle:     '📋 Evento para validar',
+    adminAuthTitle: '🔐 Login admin',
+    adminAuthBody:  'Solicitação de login ao painel admin. Você aprova?',
+};
+
+const de: PushTexts = {
+    newMatchTitle:  '🖤 Neues Match!',
+    newMatchBody:   (username) => `Du hast ein Match mit ${username}`,
+    someone:        'jemand',
+    newElegyTitle:  '✉️ Neue Elegie',
+    newElegyBody:   (username) => `${username} hat dir eine Elegie gesendet`,
+    newMessage:     'Neue Nachricht',
+    photo:          '📷 Foto',
+    reportTitle:    '🚩 Meldung zu bearbeiten',
+    reportActionedTitle: '🛡️ Meldung bearbeitet',
+    reportActionedBody:  'Das von dir gemeldete Konto wurde gesperrt. Danke, dass du Nocturne sicherer machst.',
+    eventTitle:     '📋 Veranstaltung zu prüfen',
+    adminAuthTitle: '🔐 Admin-Anmeldung',
+    adminAuthBody:  'Anmeldeanfrage an das Admin-Panel. Genehmigst du?',
+};
+
 // To support a new language, add its texts above and list it here: the user
 // model and the push-token endpoint both derive their allowed values from it.
-const CATALOG = { fr, en } satisfies Record<string, PushTexts>;
+const CATALOG = { fr, en, es, pt, de } satisfies Record<string, PushTexts>;
 
 export type PushLocale = keyof typeof CATALOG;
 export const PUSH_LOCALES = Object.keys(CATALOG) as PushLocale[];
