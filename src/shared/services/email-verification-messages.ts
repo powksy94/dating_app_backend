@@ -31,10 +31,46 @@ const en: VerificationEmailTexts = {
         </div>`,
 };
 
-const CATALOG = { fr, en } satisfies Record<string, VerificationEmailTexts>;
+const es: VerificationEmailTexts = {
+    subject: 'Nocturne — Código de verificación',
+    text: (code) => `¡Bienvenido/a a Nocturne! Tu código de verificación es: ${code}\n\nEs válido durante 15 minutos.`,
+    html: (code) => `
+        <div style="font-family:sans-serif;background:#0D0010;color:#E8E0EE;padding:32px;">
+            <h2 style="color:#7B00D4;margin:0 0 16px;">Nocturne</h2>
+            <p>¡Bienvenido/a! Aquí tienes tu código de verificación de email:</p>
+            <p style="font-size:28px;font-weight:bold;letter-spacing:4px;">${code}</p>
+            <p style="color:#AA9AB5;font-size:13px;">Válido durante 15 minutos.</p>
+        </div>`,
+};
+
+const pt: VerificationEmailTexts = {
+    subject: 'Nocturne — Código de verificação',
+    text: (code) => `Bem-vindo/a ao Nocturne! Seu código de verificação é: ${code}\n\nEle é válido por 15 minutos.`,
+    html: (code) => `
+        <div style="font-family:sans-serif;background:#0D0010;color:#E8E0EE;padding:32px;">
+            <h2 style="color:#7B00D4;margin:0 0 16px;">Nocturne</h2>
+            <p>Bem-vindo/a! Aqui está seu código de verificação de email:</p>
+            <p style="font-size:28px;font-weight:bold;letter-spacing:4px;">${code}</p>
+            <p style="color:#AA9AB5;font-size:13px;">Válido por 15 minutos.</p>
+        </div>`,
+};
+
+const de: VerificationEmailTexts = {
+    subject: 'Nocturne — Bestätigungscode',
+    text: (code) => `Willkommen bei Nocturne! Dein Bestätigungscode lautet: ${code}\n\nEr ist 15 Minuten lang gültig.`,
+    html: (code) => `
+        <div style="font-family:sans-serif;background:#0D0010;color:#E8E0EE;padding:32px;">
+            <h2 style="color:#7B00D4;margin:0 0 16px;">Nocturne</h2>
+            <p>Willkommen! Hier ist dein Bestätigungscode für deine E-Mail:</p>
+            <p style="font-size:28px;font-weight:bold;letter-spacing:4px;">${code}</p>
+            <p style="color:#AA9AB5;font-size:13px;">15 Minuten lang gültig.</p>
+        </div>`,
+};
+
+const CATALOG = { fr, en, es, pt, de } satisfies Record<string, VerificationEmailTexts>;
 
 /** The verification email texts for a user's language. Anything unknown
  * falls back to French, matching push-messages.ts's convention. */
 export function emailVerificationTexts(locale: PushLocale | string | undefined): VerificationEmailTexts {
-    return locale === 'en' ? CATALOG.en : CATALOG.fr;
+    return locale && locale in CATALOG ? CATALOG[locale as keyof typeof CATALOG] : CATALOG.fr;
 }
