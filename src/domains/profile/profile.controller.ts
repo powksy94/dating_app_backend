@@ -168,3 +168,10 @@ export async function saveFcmToken(req: AuthRequest, res: Response): Promise<voi
     await User.findByIdAndUpdate(req.userId, update);
     res.json({ message: 'FCM token saved' });
 }
+
+export async function updateLocale(req: AuthRequest, res: Response): Promise<void> {
+    const { locale } = req.body as { locale?: string };
+    if (!isPushLocale(locale)) { res.status(400).json({ message: 'Unsupported locale'}); return; }
+    await User.findByIdAndUpdate(req.userId, { locale });
+    res.json({ message: 'Locale updated' });
+}
